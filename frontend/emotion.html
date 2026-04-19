@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>24h情绪便利店</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css?family=Pacifico&display=swap" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="emotion.css">
+<script src="https://unpkg.com/vue@3.5.25/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <link rel="icon" href="logo.jpg" >
+</head>
+<body>
+  <div id="Store">
+    <nav class="navigation">
+      <img src="logo.jpg" >
+      <h1 style="margin-left: -560px;">24h情绪便利店</h1>
+      <ul>
+        <li><span @click="page='home'">主页</span></li>
+        <li><span @click="page='diary'">心情便签</span></li>
+        <li><span @click="page='ai'">小伴AI</span></li>
+        <li><span @click="page='sun'">心晴指南</span></li>
+        <li><span @click="page='treehole'">树洞</span></li>
+        <li><span @click="page='profile'">我的空间</span></li>
+      </ul>
+    </nav>
+    <transition name="fade" mode="out-in">
+      <div :key="page" class="page-container">
+        <!-- 主页 -->
+        <div v-if="page==='home'" key="home" class="welcome">
+          <!-- 弹幕 -->
+          <div class="all_words">
+            <div v-for="(row,rowIdx) in rows" 
+                 :key="rowIdx" class="words-row"   
+                 :style="{ animationDelay: `${rowIdx * 1}s`, animationDuration: `${16 + rowIdx*2}s` }">
+              <span v-for="(text,i) in row"
+                    :key="i"
+                    class="words">
+                {{ text }}
+              </span>
+            </div>
+          </div>
+          <div class="Mood" :class="{ 'not-hovering': !isHovering }">
+            <!-- 主页跳转卡片1 -->
+            <div class="mood-Record1"   
+                 @mouseenter="isHovering = true"
+                 @mouseleave="isHovering = false"
+                 @click="page='diary'">
+              <h1 >心情便签</h1>
+              <img src="record.jpg" id="pic1" alt="心情便签">
+              <p>在这里您可以记录当天的心情，并写下当下的感受，任何微小的情绪都值得被记录，这些瞬间都将会成为您以后美好的回忆！</p>
+              <h3 style="color: rgb(165, 45, 45);position: relative;top: -15px;font-size: 18px;">用宏达的世界稀释痛苦，用微小事情感知幸福</h3>
+            </div>
+            <!-- 主页跳转卡片2 -->
+            <div class="mood-Record2"
+                 @mouseenter="isHovering = true"
+                 @mouseleave="isHovering = false"
+                 @click="page='ai'">
+              <h1 style="position: relative;top: 8px;">小伴AI</h1>
+              <img src="2.jpg" id="pic2" alt="小伴AI">
+              <p>当您身边暂时没有人听您诉说时，点开它，把您想分享的发给小伴吧。</p>
+              <h3 style="color: rgb(165, 45, 45);position: relative;top: -26px;font-size: 16px;">一个永远在线、懂你性格、能陪你聊任何话题的伙伴</h3>
+            </div>
+            <!-- 主页跳转卡片3-->
+            <div class="mood-Record3"
+                 @mouseenter="isHovering = true"
+                 @mouseleave="isHovering = false"
+                 @click="page='sun'">    
+              <h1 style="position: relative;top: 9px;">心晴指南</h1>
+              <img src="3.jpg" id="pic3" alt="心晴指南">
+              <p>在这里会给出对抗情绪的一些小方法，希望能对您有帮助</p>
+              <h3 style="color: rgb(165, 45, 45);position: relative;top: -7px;">你不是一个人在对抗你的情绪！</h3>
+            </div>
+            <!-- 主页跳转卡片4 -->
+            <div class="mood-Record4"
+                 @mouseenter="isHovering = true"
+                 @mouseleave="isHovering = false"
+                 @click="page='treehole'">
+              <h1 style="position: relative;top: 9px;">树洞</h1>
+              <img src="4.jpg" id="pic4" alt="树洞">
+              <p>当您需要找人倾诉时，这里会为您提供匿名平台，可以根据您的MBTI以及星座为您匹配那个能懂你的人</p>
+              <h3 style="color: rgb(165, 45, 45);position: relative;top: -20px;">有些情绪是该说给懂得人听</h3>
+            </div>
+            <!-- 主页跳转卡片5 -->
+            <div class="mood-Record5"
+                 @mouseenter="isHovering = true"
+                 @mouseleave="isHovering = false"
+                 @click="page='profile'">
+              <h1 style="position: relative;top: 9px;">我的空间</h1>
+              <img src="5.jpg" id="pic5" alt="我的空间">
+              <p>在这里您可以看到您的心情记录以及树洞记录，过往心绪清晰存档，帮你循着点滴印记，续写属于自己的情绪故事。</p>
+              <h3 style="color: rgb(165, 45, 45);position: relative;top: -20px;">释怀过去的不开心，理解当下的自己</h3>
+            </div>
+          </div>
+        </div>
+        <!-- 心情便签 -->
+        <div v-if="page==='diary'" key="diary" class="moodDiary">
+          <div class="cover"></div>
+          <div class="content">
+            <h2>心情便签</h2>
+            <button id="btn1" @click="recieve">提交</button>
+            <div class="emoji-wrap">
+              <div v-for="(emj,index) in emoji.slice(0,35)" 
+                   :key="index" 
+                   class="E-emoji" 
+                   @click="selectEmj(emj)"
+                   :class="{'selected':selectedEmj===emj}"
+                   :title="`点击选择${emj}`">
+                {{emj}}
+              </div>
+            </div>
+            <textarea v-model="inputValue" 
+                      type="text" 
+                      class="talk" 
+                      placeholder="请先点击您当下的状态，如果可以用文字记录下吧！"></textarea>
+          </div>
+        </div>
+<!-- 小伴AI -->
+        <div v-if="page==='ai'" key="ai" class="ai-page">
+  <div class="ai-container">
+    <h2>🤖 小伴AI · 你的情绪伙伴</h2>
+    <!-- 这里可以放聊天界面，你可以复用之前写好的 sendAiMessage 逻辑 -->
+    <div class="chat-area">
+      <div v-for="(msg, idx) in aiMessages" :key="idx" class="message" :class="msg.role">
+        {{ msg.text }}
+      </div>
+    </div>
+    <div class="input-area">
+      <input v-model="aiInput" @keyup.enter="sendAiMessage" placeholder="跟小伴说点什么吧..." />
+      <button @click="sendAiMessage">发送</button>
+    </div>
+  </div>
+</div>
+<!-- 心晴指南页面（新版布局） -->
+<div v-if="page==='sun'" key="sun" class="moodsun-page">
+  <div class="sun-container">
+    
+    <!-- 两栏布局：左侧（今日暖言 + 情绪调整方法） + 右侧（排行榜） -->
+    <div class="sun-two-columns">
+      
+      <!-- 左侧栏 -->
+      <div class="sun-left-column">
+        
+        <!-- 今日暖言（精简版） -->
+        <div class="daily-warm-quote compact">
+          <div class="quote-tag">✨ 今日暖言</div>
+          <p>"{{ topWarmWord.text }}"</p>
+          <div class="quote-author">
+            <span>—— {{ topWarmWord.author }}</span>
+            <span class="quote-likes">❤️ {{ topWarmWord.likes }}</span>
+          </div>
+        </div>
+        
+        <!-- 专业情绪调整方法（点击弹窗版） -->
+        <div class="emotion-tips-section compact">
+          <h2 class="section-title">🧠 专业情绪调整方法</h2>
+          <div class="tips-grid-vertical">
+            <div v-for="tip in emotionTips" 
+                 :key="tip.id" 
+                 class="tip-card-compact"
+                 @click="openTipModal(tip)">
+              <div class="tip-header">
+                <span class="tip-emoji">{{ tip.emoji }}</span>
+                <h3 class="tip-title">{{ tip.title }}</h3>
+              </div>
+              <p class="tip-summary">{{ tip.summary }}</p>
+              <div class="tip-stats">
+                <span class="tip-duration">⏱️ {{ tip.duration }}分钟</span>
+                <span class="tip-efficiency">📈 {{ tip.effectiveness }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- 右侧栏：心情妙计排行榜 -->
+      <div class="sun-right-column">
+        <div class="tips-ranking-section compact">
+          <h2 class="ranking-title">🏆 本周心情妙计排行榜</h2>
+          <div class="ranking-list">
+            <div v-for="(item, index) in topTipsRanking" 
+                 :key="item.id" 
+                 class="rank-item">
+              <div :class="['rank-number', `top-${index + 1}`]">{{ index + 1 }}</div>
+              <div class="rank-content">{{ item.text }}</div>
+              <div class="rank-stats">
+                <span class="rank-likes">❤️ {{ item.likes }}</span>
+                <span class="rank-author">@{{ item.author }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 社区互动空间（分享心情妙计） -->
+    <div class="community-section">
+      <h2 class="section-title">💬 心情锦囊妙计 · 社区分享</h2>
+      <p style="color: #666; margin-bottom: 25px; font-size: 1.1em;">
+        分享你亲测有效的情绪调节方法，帮助更多人找到内心的平静
+      </p>
+      
+      <!-- 发布新方法 -->
+      <div class="new-tip-form">
+        <h3 class="form-title">✍️ 分享你的心情妙计</h3>
+        <textarea 
+          v-model="newCommunityTip" 
+          class="tip-input" 
+          placeholder="例如：当我感到焦虑时，我会去散步15分钟，感受大自然的气息..."
+          maxlength="300"
+          rows="4"></textarea>
+        <div class="form-footer">
+          <span class="char-count">{{ newCommunityTip.length }}/300</span>
+          <button 
+            @click="submitCommunityTip" 
+            class="submit-tip-btn"
+            :disabled="!newCommunityTip.trim()">
+            📤 发布分享
+          </button>
+        </div>
+      </div>
+      
+      <!-- 社区方法列表 -->
+      <div class="community-tips">
+        <div v-for="tip in communityTips" 
+             :key="tip.id" 
+             class="community-tip-card">
+          <p class="tip-content">"{{ tip.text }}"</p>
+          <div class="tip-meta">
+            <span class="tip-author">@{{ tip.author }}</span>
+            <span class="tip-time">{{ formatTime(tip.time) }}</span>
+          </div>
+          <div class="tip-actions">
+            <button 
+              @click="likeCommunityTip(tip)"
+              :class="['like-btn', {liked: tip.liked}]">
+              ❤️ <span class="tip-likes">{{ tip.likes }}</span>
+            </button>
+            <span class="tip-helpful">帮助了 {{ tip.helped }} 人</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 暖心话语墙（增加用户提交功能） -->
+    <div class="warm-words-wall">
+      <h2 class="section-title">💌 暖心话语墙</h2>
+      <p style="color: #666; margin-bottom: 25px; font-size: 1.1em;">
+        留下一句温暖的话，点赞最高的将成为明天的"今日暖言"
+      </p>
+      
+      <!-- 新增：用户提交暖言表单 -->
+      <div class="new-warmword-form">
+        <textarea 
+          v-model="newWarmWord" 
+          class="warmword-input" 
+          placeholder="写下你想送给大家的暖心话语..."
+          maxlength="100"
+          rows="2"></textarea>
+        <div class="warmword-form-footer">
+          <span class="char-count">{{ newWarmWord.length }}/100</span>
+          <button 
+            @click="submitWarmWord" 
+            class="submit-warmword-btn"
+            :disabled="!newWarmWord.trim()">
+            🌟 送上温暖
+          </button>
+        </div>
+      </div>
+      
+      <!-- 暖言卡片网格 -->
+      <div class="wall-grid">
+        <div v-for="word in warmWords" 
+             :key="word.id" 
+             :class="['word-card', { 'top-word': word.id === topWarmWord.id }]">
+          <p class="word-content">"{{ word.text }}"</p>
+          <div class="word-footer">
+            <span class="word-author">—— {{ word.author }}</span>
+            <button 
+              @click="likeWarmWord(word)"
+              class="word-likes">
+              ❤️ {{ word.likes }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  
+  <!-- 情绪调整方法步骤弹窗 -->
+  <div v-if="showTipModal" class="tip-modal-overlay" @click.self="closeTipModal">
+    <div class="tip-modal">
+      <div class="tip-modal-header">
+        <h3><span class="tip-emoji">{{ currentTip.emoji }}</span> {{ currentTip.title }}</h3>
+        <button @click="closeTipModal" class="close-modal-btn">×</button>
+      </div>
+      <div class="tip-modal-body">
+        <p class="tip-summary">{{ currentTip.summary }}</p>
+        <h4>📋 操作步骤：</h4>
+        <ol class="step-list">
+          <li v-for="(step, idx) in currentTip.steps" :key="idx" class="step-item">{{ step }}</li>
+        </ol>
+        <div class="tip-stats">
+          <span class="tip-duration">⏱️ {{ currentTip.duration }}分钟</span>
+          <span class="tip-efficiency">📈 {{ currentTip.effectiveness }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 心理咨询浮动按钮 -->
+  <button 
+    @click="showCounselingModal = true" 
+    class="counseling-float-btn">
+    🩺 专业心理求助
+  </button>
+  
+  <!-- 心理咨询弹窗 -->
+  <div v-if="showCounselingModal" 
+       class="counseling-modal" 
+       @click.self="showCounselingModal = false">
+    <div class="modal-box">
+      <div class="modal-header">
+        <button @click="showCounselingModal = false" class="close-modal-btn">×</button>
+        <h3>🤝 专业心理咨询</h3>
+        <p class="modal-subtitle">我们为你联系了专业的心理咨询师，随时为你提供帮助</p>
+      </div>
+      
+      <div class="doctor-list">
+        <div v-for="doctor in counselors" 
+             :key="doctor.id" 
+             class="doctor-card">
+          <div class="doctor-info">
+            <div class="doctor-header">
+              <div class="doctor-avatar">{{ doctor.name.charAt(0) }}</div>
+              <div class="doctor-basic">
+                <h4>{{ doctor.name }} 医生</h4>
+                <span class="doctor-tag">{{ doctor.specialty }}</span>
+              </div>
+            </div>
+            <p class="doctor-details">{{ doctor.description }}</p>
+            <div class="doctor-rating">
+              <span>⭐⭐⭐⭐⭐</span>
+              <span>{{ doctor.rating }}/5.0</span>
+              <span>（{{ doctor.cases }} 个案例）</span>
+            </div>
+          </div>
+          <div class="doctor-actions">
+            <button @click="startConsultation(doctor)" class="consult-btn">
+              📞 立即咨询
+            </button>
+            <div class="price-tag">¥{{ doctor.price }}/次</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="emergency-hotline">
+        ⚠️ 紧急提示：如果你感到极度不适或处于危机中，请立即拨打心理危机干预热线：400-161-9995
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 树洞页面 · 漂流瓶版 -->
+<div v-if="page==='treehole'" key="treehole" class="treehole-page">
+  <div class="treehole-container">
+    
+    <!-- 左侧：TA的心事（公开树洞） -->
+    <div class="public-confessions-panel">
+      <div class="panel-header">
+        <h3>💌 TA的心事</h3>
+        <p class="panel-subtitle">看看大家都在想些什么</p>
+      </div>
+      
+      <div class="confessions-list" v-if="publicConfessions.length > 0">
+        <div v-for="(confession, index) in publicConfessions" 
+             :key="confession.id || index" 
+             class="confession-card"
+             @click="openConfessionDetail(confession)">
+          <div class="card-header">
+            <span class="card-emoji">{{ confession.emoji || '💭' }}</span>
+            <span class="card-time">{{ formatRelativeTime(confession.time) }}</span>
+          </div>
+          <div class="card-content">
+            {{ confession.message.length > 60 ? confession.message.substring(0, 60) + '...' : confession.message }}
+          </div>
+          <div class="card-footer">
+            <span class="likes-count">❤️ {{ confession.likes || 0 }}</span>
+            <span class="comments-count">💬 {{ getCommentCount(confession) }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div v-else class="empty-state">
+        <div class="empty-icon">🌙</div>
+        <p>还没有公开的心事</p>
+        <p class="empty-hint">写下第一条心事吧～</p>
+      </div>
+    </div>
+    
+    <!-- 右侧：漂流瓶核心区 -->
+    <div class="my-treehole-panel">
+      <div class="panel-header">
+        <h2>🍾 漂流瓶树洞</h2>
+        <p class="panel-subtitle">把你的心事装进瓶子，扔向大海，或许会被懂你的人拾起</p>
+      </div>
+      
+      <!-- 用户信息提示 -->
+      <div class="user-match-info" v-if="currentUser">
+        <span>🧬 你的 MBTI：{{ currentUser.mbti || '未设置' }}</span>
+        <span>✨ 你的星座：{{ currentUser.zodiac || '未设置' }}</span>
+      </div>
+      <div class="user-match-info" v-else>
+        <span>👤 登录后可体验完整漂流瓶匹配功能</span>
+      </div>
+      
+      <!-- 扔瓶子区域 -->
+      <div class="throw-bottle-section">
+        <h3>📮 扔一个漂流瓶</h3>
+        
+        <!-- 匹配偏好选择 -->
+        <div class="match-preference">
+          <label class="pref-label">
+            <input type="radio" value="similar" v-model="bottleMatchMode"> 🌊 匹配相似的人
+          </label>
+          <label class="pref-label">
+            <input type="radio" value="complementary" v-model="bottleMatchMode"> 🔄 匹配互补的人
+          </label>
+        </div>
+        
+        <!-- 👇 新增：是否公开选项 -->
+        <div class="public-option" style="margin-bottom: 15px;">
+          <label class="option-label">
+            <input type="checkbox" v-model="bottleIsPublic"> 
+            <span>📢 公开到「TA的心事」</span>
+          </label>
+          <p class="option-hint" style="color: #a0b5d0; font-size: 0.85em; margin-left: 30px;">
+            公开后所有人可见，私密仅自己可见
+          </p>
+        </div>
+        
+        <textarea
+          v-model="bottleMessage"
+          placeholder="写下你想说的话……"
+          maxlength="300"
+          rows="4"
+          class="bottle-input"
+        ></textarea>
+        <div class="char-counter">{{ bottleMessage.length }}/300</div>
+        
+        <div class="bottle-actions">
+          <button @click="throwBottle" class="throw-btn" :disabled="!bottleMessage.trim() || throwingBottle">
+            <span v-if="!throwingBottle">🍾 扔出瓶子</span>
+            <span v-else>扔出中...</span>
+          </button>
+          <!-- 扔出动画容器 -->
+          <div class="bottle-animation" v-if="showThrowAnimation">
+            <span class="bottle-icon">🍾</span>
+            <span class="splash">💦</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 捡瓶子区域 -->
+      <div class="pick-bottle-section">
+        <h3>🐚 捡一个漂流瓶</h3>
+        <p class="pick-hint">点击按钮，系统会根据你的 MBTI 和星座，以及瓶子主人的匹配偏好，为你捞起一个漂流瓶</p>
+        
+        <button @click="pickBottle" class="pick-btn" :disabled="pickingBottle">
+          <span v-if="!pickingBottle">🥄 捞起漂流瓶</span>
+          <span v-else>捞取中...</span>
+        </button>
+        
+        <!-- 捡到的瓶子内容展示 -->
+        <div class="picked-bottle" v-if="pickedBottle">
+          <div class="picked-bottle-header">
+            <span class="bottle-emoji">🍾</span>
+            <span class="bottle-time">{{ formatRelativeTime(pickedBottle.time) }}</span>
+          </div>
+          <p class="picked-bottle-content">{{ pickedBottle.message }}</p>
+          <div class="picked-bottle-meta">
+            <span>🧬 主人 MBTI：{{ pickedBottle.authorMBTI || '未知' }}</span>
+            <span>✨ 星座：{{ pickedBottle.authorZodiac || '未知' }}</span>
+            <span>🎯 期望：{{ pickedBottle.matchMode === 'similar' ? '相似的人' : '互补的人' }}</span>
+          </div>
+          <div class="picked-bottle-actions">
+            <button @click="likePickedBottle" class="like-picked-btn">❤️ {{ pickedBottle.likes || 0 }}</button>
+            <button @click="closePickedBottle" class="close-picked-btn">放回大海</button>
+          </div>
+          <!-- 捡瓶子动画 -->
+          <div class="pick-animation" v-if="showPickAnimation">
+            <span class="wave">🌊</span>
+            <span class="bottle-icon">🍾</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 历史瓶子 -->
+      <div class="bottle-history" v-if="myBottles.length > 0">
+        <h4>📦 我扔出的瓶子 ({{ myBottles.length }})</h4>
+        <div class="history-list">
+          <div v-for="b in myBottles.slice(0,3)" :key="b.id" class="history-item">
+            <span>{{ b.message.slice(0,20) }}...</span>
+            <span class="history-status">{{ b.picked ? '已被拾起' : '漂流中' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 心事详情弹窗 -->
+  <div v-if="showConfessionDetail" class="confession-modal">
+    <div class="modal-overlay" @click="closeConfessionDetail"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-emoji">{{ currentDetail.emoji || '💭' }}</div>
+        <div class="modal-time">{{ formatFullTime(currentDetail.time) }}</div>
+        <button @click="closeConfessionDetail" class="close-btn">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="confession-detail">
+          <p>{{ currentDetail.message }}</p>
+        </div>
+        
+        <div class="reply-detail">
+          <h4>🌳 树洞回信：</h4>
+          <p>{{ currentDetail.reply }}</p>
+        </div>
+        
+        <!-- 互动区域 -->
+        <div class="interaction-area">
+          <div class="interaction-stats">
+            <button @click="likeConfession(currentDetail)" class="like-btn">
+              ❤️ {{ currentDetail.likes || 0 }}
+            </button>
+            <span class="comment-count">💬 {{ getCommentCount(currentDetail) }}</span>
+          </div>
+          
+          <!-- 评论区域 -->
+          <div class="comments-section" v-if="currentDetail">
+            <h4>💬 评论（{{ getCommentCount(currentDetail) }}）</h4>
+            
+            <div class="comments-list" v-if="getCommentCount(currentDetail) > 0">
+              <div v-for="(comment, index) in currentDetail.comments" 
+                   :key="index" 
+                   class="comment-item">
+                <div class="comment-header">
+                  <span class="comment-author">匿名用户 {{ index + 1 }}</span>
+                  <span class="comment-time">{{ formatRelativeTime(comment.time) }}</span>
+                </div>
+                <div class="comment-content">{{ comment.text }}</div>
+              </div>
+            </div>
+            
+            <div v-else class="no-comments">
+              还没有评论，快来第一条评论吧～
+            </div>
+            
+            <!-- 发表评论 -->
+            <div class="comment-input-area">
+              <textarea 
+                v-model="newCommentText" 
+                placeholder="写下你的评论...（匿名）"
+                maxlength="200"
+                rows="3"
+                class="comment-input"
+              ></textarea>
+              <div class="comment-input-footer">
+                <span class="char-count">{{ newCommentText.length }}/200</span>
+                <button @click="submitComment(currentDetail)" 
+                        class="comment-submit-btn"
+                        :disabled="!newCommentText.trim()">
+                  发表评论
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 我的空间页面 -->
+<div v-if="page === 'profile'" key="profile" class="profile-page">
+  <!-- 背景装饰 -->
+  <div class="bg-decoration"></div>
+
+  <!-- 主容器 -->
+  <div class="profile-container">
+
+    <!-- 未登录状态 -->
+    <div v-if="!currentUser" class="guest-welcome">
+      <h2>✨ 欢迎来到你的心灵小屋</h2>
+      <p>在这里，你可以记录情绪、了解自己、倾诉心事</p>
+      <div class="auth-actions">
+        <button @click="openLogin" class="btn-login">已有账号？登录</button>
+        <button @click="openRegister" class="btn-register">注册新用户</button>
+      </div>
+    </div>
+
+    <!-- 已登录状态 -->
+    <div v-else class="user-profile">
+
+      <!-- 用户信息头部 -->
+      <div class="profile-header">
+        <div class="avatar">
+          <img v-if="currentUser.avatar && (currentUser.avatar.startsWith('data:') || currentUser.avatar.startsWith('http'))"
+               :src="currentUser.avatar" />
+          <span v-else>{{ currentUser.avatar || '👤' }}</span>
+        </div>
+        <div class="info">
+          <h1>{{ currentUser.username }}</h1>
+          <p class="meta">
+            {{ currentUser.gender }} · {{ currentUser.zodiac }} · 
+            <span :title="getMBTIDescription(currentUser.mbti)">{{ currentUser.mbti || '未测试' }}</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- 数据概览卡片 -->
+      <div class="stats-grid">
+        <div class="stat-card mood">
+          <h3>心情日记</h3>
+          <p><strong>{{ moodRecords.length }}</strong> 条记录</p>
+          <small>最近一次：{{ formattedRecords[0]?.date || '暂无' }}</small>
+        </div>
+        <div class="stat-card treehole">
+          <h3>树洞私语</h3>
+          <p><strong>{{ treeholeHistory.length }}</strong> 次倾诉</p>
+        </div>
+        <div class="stat-card mbti" v-if="currentUser.mbti">
+          <h3>你的性格</h3>
+          <p><strong>{{ currentUser.mbti }}</strong></p>
+          <small>{{ getMBTIDescription(currentUser.mbti) }}</small>
+        </div>
+      </div>
+
+      <!-- 最近心情记录 -->
+      <div class="section recent-mood">
+        <h2>📝 近期心情便签</h2>
+        <div v-if="formattedRecords.length === 0" class="empty">
+          🫧 尚未记录任何心情，去主页试试吧～
+        </div>
+        <div v-else class="records-list">
+          <div v-for="(r, i) in formattedRecords.slice(0, 6)" :key="i" class="record-item">
+            <!-- 摘要栏 -->
+            <div class="record-summary" @click="toggleMood(i)">
+              <span class="emoji">{{ r.emoji }}</span>
+              <span class="text-preview">{{ r.text.slice(0, 18) }}{{ r.text.length > 18 ? '…' : '' }}</span>
+              <span class="expand-btn">{{ expandedMood.has(i) ? '收起' : '展开' }}</span>
+            </div>
+            <!-- 展开区 -->
+            <transition name="slide-fade">
+              <div v-if="expandedMood.has(i)" class="record-detail">
+                <div class="text-full">{{ r.text }}</div>
+                <div class="time-row">
+                  <span class="time">{{ r.date }}</span>
+                  <button class="del-btn" @click.stop="delMood(i)">删除</button>
+                </div>
+              </div>
+            </transition>
+          </div>
+        </div>
+      </div>
+
+      <!-- 树洞历史 -->
+      <div class="section treehole-history">
+        <h2>🌙 树洞说过的话</h2>
+        <div v-if="formattedTreeholeHistory.length === 0" class="empty">
+          🕳️ 还没向树洞说过悄悄话呢
+        </div>
+        <div v-else class="treehole-list">
+          <div v-for="(t, i) in formattedTreeholeHistory" :key="i" class="treehole-item">
+            <!-- 摘要栏 -->
+            <div class="treehole-summary" @click="toggleTreehole(i)">
+              <span class="time">{{ t.date }}</span>
+              <span class="expand-btn">{{ expandedTH.has(i) ? '收起' : '展开' }}</span>
+            </div>
+            <!-- 展开区 -->
+            <transition name="slide-fade">
+              <div v-if="expandedTH.has(i)" class="treehole-detail">
+                <blockquote>「{{ t.message }}」</blockquote>
+                <p class="reply">树洞回信：{{ t.reply }}</p>
+                <button class="del-btn" @click.stop="delTreehole(t.id)">删除</button>
+              </div>
+            </transition>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部操作栏 -->
+      <div class="action-footer">
+        <button @click="logout" class="btn-logout">退出登录</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 登录弹窗 -->
+  <div v-if="showLoginModal" class="modal-backdrop" @click="closeModals()">
+    <div class="modal" @click.stop>
+      <h3>🔐 登录账户</h3>
+      <div class="form-group">
+        <label>用户名</label>
+        <input v-model="loginForm.username" placeholder="请输入用户名">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" v-model="loginForm.password" placeholder="请输入密码">
+      </div>
+      <div class="modal-footer">
+        <button @click="closeModals()" class="btn-cancel">取消</button>
+        <button @click="doLogin" class="btn-confirm">登录</button>
+      </div>
+      <p class="switch-link">
+        没有账号？<a href="#" @click.prevent="openRegister">立即注册</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- 注册弹窗 -->
+  <div v-if="showRegisterModal" class="modal-backdrop" @click="closeModals()">
+    <div class="modal" @click.stop>
+      <h3>🌟 创建新账户</h3>
+      <div class="form-group">
+        <label>头像</label>
+        <input type="file" accept="image/*" @change="pickAvatar">
+        <div class="avatar-preview" v-if="registerForm.avatar">
+          <img :src="registerForm.avatar" class="pic_T" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>用户名 *</label>
+        <input v-model="registerForm.username" placeholder="用于登录">
+      </div>
+      <div class="form-group">
+        <label>密码 *</label>
+        <input type="password" v-model="registerForm.password" placeholder="至少6位">
+      </div>
+      <div class="form-group">
+        <label>性别</label>
+        <select v-model="registerForm.gender">
+          <option>男</option>
+          <option>女</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>星座</label>
+        <select v-model="registerForm.zodiac">
+          <option v-for="sign in zodiacSigns" :value="sign">{{ sign }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>MBTI 性格 *</label>
+        <select v-model="registerForm.mbti">
+          <option value="">请选择</option>
+          <option>INTJ</option><option>INTP</option><option>ENTJ</option><option>ENTP</option>
+          <option>INFJ</option><option>INFP</option><option>ENFJ</option><option>ENFP</option>
+          <option>ISTJ</option><option>ISFJ</option><option>ESTJ</option><option>ESFJ</option>
+          <option>ISTP</option><option>ISFP</option><option>ESTP</option><option>ESFP</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button @click="closeModals()" class="btn-cancel">取消</button>
+        <button @click="doRegister" class="btn-confirm">注册</button>
+      </div>
+    </div>
+  </div>
+</div>
+    </transition>
+  </div>
+  <script src="emotion.js"></script>
+</body>
+</html>
