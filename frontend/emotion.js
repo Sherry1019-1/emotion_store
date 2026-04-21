@@ -1,7 +1,7 @@
 const { createApp } = Vue;
 
 // API 基础地址（后端运行地址）
-const API_BASE = "http://localhost:8081/api";
+const API_BASE = "http://124.222.15.227:8000/api";
 
 // 获取存储的 token
 function getToken() {
@@ -106,6 +106,7 @@ createApp({
             publicConfessions: [],
             showConfessionDetail: false,
             currentDetail: null,
+            // 只保留一个 newCommentText，避免重复声明
             newCommentText: '',
             expandedTH: new Set(),
             
@@ -120,6 +121,7 @@ createApp({
             pickedBottle: null,
             myBottles: [],
             allBottles: [],
+            showCommentModal: false,
 
             // ===== 6. 用户系统数据 =====
             currentUser: null,
@@ -148,7 +150,7 @@ createApp({
             ],
             emoji: [
                 "😄","😅","🙂","🤩","🥰","😋","🤔","🤐","😑","😏","😒","🙄","🫨","😔","😴",
-                "🫩","😪","😷","🤒","🤕","🤢","🤮","😵‍💫","🥳","😮","😱","😭","🥹","😨","😤",
+                "🫩","😪","😷","🤒","🤕","🤢","��","😵‍💫","🥳","😮","😱","😭","🥹","😨","😤",
                 "🤬","🤡","💩","💘","💔","😘"
             ],
             zodiacSigns: ["白羊座","金牛座","双子座","巨蟹座","狮子座","处女座","天秤座","天蝎座","射手座","摩羯座","水瓶座","双鱼座"]
@@ -210,27 +212,27 @@ createApp({
     methods: {
         // ===== 小伴AI =====
         async sendAiMessage() {
-    if (!this.aiInput.trim()) return;
-    const userText = this.aiInput;
-    this.aiMessages.push({ role: 'user', text: userText });
-    this.aiInput = '';
-    this.aiTyping = true;
+            if (!this.aiInput.trim()) return;
+            const userText = this.aiInput;
+            this.aiMessages.push({ role: 'user', text: userText });
+            this.aiInput = '';
+            this.aiTyping = true;
 
-    try {
-        const data = await apiCall('/ai/chat', 'post', { message: userText });
-        this.aiTyping = false;
-        this.aiMessages.push({ role: 'assistant', text: data.reply });
-    } catch (error) {
-        console.error(error);
-        this.aiTyping = false;
-        this.aiMessages.push({ role: 'assistant', text: '小伴暂时无法回复，请稍后再试。' });
-    }
+            try {
+                const data = await apiCall('/ai/chat', 'post', { message: userText });
+                this.aiTyping = false;
+                this.aiMessages.push({ role: 'assistant', text: data.reply });
+            } catch (error) {
+                console.error(error);
+                this.aiTyping = false;
+                this.aiMessages.push({ role: 'assistant', text: '小伴暂时无法回复，请稍后再试。' });
+            }
 
-    this.$nextTick(() => {
-        const win = this.$refs.chatWindow;
-        if (win) win.scrollTop = win.scrollHeight;
-    });
-},
+            this.$nextTick(() => {
+                const win = this.$refs.chatWindow;
+                if (win) win.scrollTop = win.scrollHeight;
+            });
+        },
 
         // ===== 心晴指南方法 =====
         toggleTipDetail(index) { this.emotionTips[index].expanded = !this.emotionTips[index].expanded; },
@@ -350,12 +352,50 @@ createApp({
                 this.submitting = false;
             }
         },
+        // 保留于公开心事（后端）的评论函数
+        async submitComment(confession) {
+            if (!this.newCommentText.trim()) return;
+            try {
+                const target = confession || this.currentDetail;
+                if (!target || !target.id) {
+                    alert('无法找到要评论的心事');
+                    return;
+                }
+                await apiCall(`/treehole/public/${target.id}/comment`, 'post', { text: this.newCommentText });
+                // 刷新公开心事列表
+                this.publicConfessions = await apiCall('/treehole/public', 'get');
+                if (this.currentDetail && this.currentDetail.id === target.id) {
+                    this.currentDetail = this.publicConfessions.find(c => c.id === target.id) || this.currentDetail;
+                }
+                this.newCommentText = '';
+                alert('留言已发送');
+            } catch(e) {
+                console.error(e);
+                alert('评论失败');
+            }
+        },
+        getCommentCount(confession) {
+    if (!confession) return 0;
+    if (!confession.comments) return 0;
+    return confession.comments.length;
+},
+        openConfessionDetail(detail) {
+            this.currentDetail = detail;
+            if (!this.currentDetail.comments) {
+                this.currentDetail.comments = [];
+            }
+            this.showConfessionDetail = true;
+        },
+        closeConfessionDetail() {
+            this.showConfessionDetail = false;
+            this.currentDetail = null;
+            this.newCommentText = '';
+        },
+
         async likeConfession(confession) {
             try {
                 await apiCall(`/treehole/public/${confession.id}/like`, 'post');
-                // 刷新公开心事列表
                 this.publicConfessions = await apiCall('/treehole/public', 'get');
-                // 同时更新弹窗中的 detail
                 if (this.currentDetail && this.currentDetail.id === confession.id) {
                     this.currentDetail = this.publicConfessions.find(c => c.id === confession.id);
                 }
@@ -363,79 +403,114 @@ createApp({
                 alert('点赞失败');
             }
         },
-        async submitComment(confession) {
-            if (!this.newCommentText.trim()) return;
-            try {
-                await apiCall(`/treehole/public/${confession.id}/comment`, 'post', { text: this.newCommentText });
-                // 刷新公开心事列表
-                this.publicConfessions = await apiCall('/treehole/public', 'get');
-                if (this.currentDetail && this.currentDetail.id === confession.id) {
-                    this.currentDetail = this.publicConfessions.find(c => c.id === confession.id);
-                }
-                this.newCommentText = '';
-            } catch(e) {
-                alert('评论失败');
-            }
-        },
-        formatRelativeTime(ts) {
-            if (!ts) return '';
-            const diff = Date.now() - ts;
-            const mins = Math.floor(diff/60000), hrs = Math.floor(diff/3600000), days = Math.floor(diff/86400000);
-            if (mins < 1) return '刚刚';
-            if (mins < 60) return `${mins}分钟前`;
-            if (hrs < 24) return `${hrs}小时前`;
-            if (days < 7) return `${days}天前`;
-            return new Date(ts).toLocaleDateString('zh-CN');
-        },
-        formatFullTime(ts) { return ts ? new Date(ts).toLocaleString('zh-CN') : ''; },
-        getCommentCount(c) { return c?.comments?.length || 0; },
-        openConfessionDetail(c) {
-            if (!c.reply) c.reply = '🌊 这是一封来自漂流瓶的心事，愿你能感受到其中的温度。';
-            this.currentDetail = { ...c };
-            this.showConfessionDetail = true;
-        },
-        closeConfessionDetail() { this.showConfessionDetail = false; this.currentDetail = null; this.newCommentText = ''; },
-        writeAnother() { this.submitted = false; this.treeholeMessage = ''; this.isPublic = false; },
-        clearMessage() { this.treeholeMessage = ''; },
-        toggleTreehole(idx) {
-            this.expandedTH.has(idx) ? this.expandedTH.delete(idx) : this.expandedTH.add(idx);
-            this.expandedTH = new Set(this.expandedTH);
-        },
-        async delTreehole(id) {
-            if (!confirm('确定删除这条树洞记录吗？')) return;
-            try {
-                await apiCall(`/treehole/${id}`, 'delete');
-                this.treeholeHistory = this.treeholeHistory.filter(t => t.id !== id);
-            } catch(e) {
-                alert('删除失败');
-            }
-        },
 
         // ===== 漂流瓶功能 =====
+        formatRelativeTime(time) {
+        if (!time) return "刚刚";
+
+        const d = new Date(time);
+        if (isNaN(d.getTime())) return "刚刚";
+
+        const now = new Date();
+        const diff = Math.floor((now - d) / 1000);
+
+        if (diff < 60) return "刚刚";
+        if (diff < 3600) return Math.floor(diff / 60) + "分钟前";
+        if (diff < 86400) return Math.floor(diff / 3600) + "小时前";
+        if (diff < 2592000) return Math.floor(diff / 86400) + "天前";
+        return d.toLocaleDateString();
+    },
+        openCommentModal() {
+            if (!this.pickedBottle) return;
+            if (!this.pickedBottle.comments) {
+              this.pickedBottle.comments = [];
+            }
+            this.showCommentModal = true;
+        },
+
+        closeCommentModal() {
+            this.showCommentModal = false;
+        },
+
+        // 本地提交捡到瓶子的留言（若需要持久化可以改为调用后端 API）
+        submitPickedBottleComment() {
+            if (!this.newCommentText.trim()) return;
+            if (!this.pickedBottle) return;
+
+            this.pickedBottle.comments.push({
+              text: this.newCommentText,
+              time: Date.now()
+            });
+
+            this.newCommentText = "";
+            // 如果希望提交后同时关闭弹窗，可启用下面这一行：
+            // this.showCommentModal = false;
+        },
+
+        // 在详情中查看被捡到的瓶子（复用详情弹窗）
+        goCommentPickedBottle() {
+            if (!this.pickedBottle) return;
+            this.currentDetail = this.pickedBottle;
+            if (!this.currentDetail.comments) {
+              this.currentDetail.comments = [];
+            }
+            if (!this.currentDetail.reply) {
+              this.currentDetail.reply = "（对方还没有回复）";
+            }
+            this.showConfessionDetail = true;
+        },
+
+        // 改进的 throwBottle：增加调试日志、友好提示、刷新数据
         async throwBottle() {
+            console.log('[debug] throwBottle clicked', { bottleMessage: this.bottleMessage, currentUser: this.currentUser ? {
+                id: this.currentUser.id, mbti: this.currentUser.mbti, zodiac: this.currentUser.zodiac
+            } : null });
+
             if (!this.bottleMessage.trim() || this.throwingBottle) return;
-            if (!this.currentUser?.mbti || !this.currentUser?.zodiac) {
-                alert('请先登录并完善 MBTI 和星座信息');
+
+            if (!this.currentUser) {
+                alert('请先登录再扔漂流瓶（点击 我的空间 → 登录/注册）');
                 return;
             }
+            if (!this.currentUser.mbti || !this.currentUser.zodiac) {
+                alert('请先完善 MBTI 与星座信息（进入 我的空间 完成资料）');
+                return;
+            }
+
             this.throwingBottle = true;
             this.showThrowAnimation = true;
+
             try {
-                await apiCall('/bottles/throw', 'post', {
+                const res = await apiCall('/bottles/throw', 'post', {
                     message: this.bottleMessage,
                     match_mode: this.bottleMatchMode,
                     is_public: this.bottleIsPublic
                 });
+                console.log('[debug] throwBottle response', res);
                 alert('🍾 你的漂流瓶已投入大海！');
+
                 this.bottleMessage = '';
-                this.myBottles = await apiCall('/bottles/my', 'get');
-            } catch(e) {
-                alert(e.response?.data?.detail || '扔瓶子失败');
+                try {
+                    this.publicConfessions = await apiCall('/treehole/public', 'get');
+                } catch (e2) {
+                    console.warn('[warn] 刷新公开心事失败', e2);
+                }
+                try {
+                    this.myBottles = await apiCall('/bottles/my', 'get');
+                } catch (e3) {
+                    console.warn('[warn] 刷新我的瓶子失败', e3);
+                }
+
+            } catch (e) {
+                console.error('[error] throwBottle failed', e);
+                const detail = e?.response?.data?.detail || e.message || '扔瓶子失败，请稍后重试';
+                alert(detail);
             } finally {
                 this.throwingBottle = false;
-                setTimeout(() => this.showThrowAnimation = false, 1000);
+                setTimeout(() => { this.showThrowAnimation = false; }, 1000);
             }
         },
+
         async pickBottle() {
             if (this.pickingBottle) return;
             this.pickingBottle = true;
@@ -450,6 +525,7 @@ createApp({
                 this.pickingBottle = false;
             }
         },
+
         async likePickedBottle() {
             if (!this.pickedBottle) return;
             try {
@@ -459,9 +535,11 @@ createApp({
                 alert('点赞失败');
             }
         },
+
         closePickedBottle() {
             this.pickedBottle = null;
         },
+
         calculateMBTISimilarity(mbti1, mbti2) {
             if (!mbti1 || !mbti2) return 0;
             let same = 0;
@@ -491,7 +569,6 @@ createApp({
                 return 1;
             }
         },
-
         // ===== 用户系统 =====
         openLogin() { this.showLoginModal = true; this.showRegisterModal = false; },
         openRegister() { this.showRegisterModal = true; this.showLoginModal = false; },

@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
-from routers import users, moods
+from routers import users, moods, treehole, bottles
 from routers import users, ai
 
 # 1. 定义 lifespan
@@ -18,7 +18,7 @@ app.include_router(ai.router)
 # 3. 配置 CORS 中间件（必须在 app 创建之后）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # 先全部允许（开发阶段）
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,6 +27,8 @@ app.add_middleware(
 # 4. 注册路由
 app.include_router(users.router)
 app.include_router(moods.router)
+app.include_router(treehole.router)
+app.include_router(bottles.router)
 # 5. 根路径
 @app.get("/")
 async def root():

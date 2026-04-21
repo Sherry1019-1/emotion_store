@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel
 from datetime import datetime
@@ -36,4 +36,45 @@ class MoodCreate(BaseModel):
 
 class MoodOut(MoodCreate):
     id: int
+    time: datetime
+
+# 私密树洞
+class TreeholePrivateCreate(BaseModel):
+    message: str
+
+class TreeholePrivateOut(BaseModel):
+    id: int
+    message: str
+    reply: str
+    time: datetime
+
+# 公开心事
+class PublicConfessionCreate(BaseModel):
+    message: str
+    emoji: str | None = None
+
+class PublicConfessionOut(BaseModel):
+    id: int
+    user_id: int
+    message: str
+    emoji: str | None = None
+    likes: int
+    comments: List[Dict[str, Any]]   # 列表内是 {user_id, text, time}
+    time: datetime
+
+class CommentCreate(BaseModel):
+    text: str
+
+class BottleCreate(BaseModel):
+    message: str
+    match_mode: str = "similar"
+    is_public: bool = True
+
+class BottleOut(BaseModel):
+    id: int
+    message: str
+    author_mbti: str
+    author_zodiac: str
+    match_mode: str
+    likes: int
     time: datetime

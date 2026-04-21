@@ -4,7 +4,7 @@ from sqlalchemy import select, delete
 from database import get_db
 from models import MoodRecord, Users
 from schemas import MoodCreate, MoodOut
-from login import get_current_user
+from auth import get_current_user
 
 router = APIRouter(prefix="/api/moods", tags=["moods"])
 

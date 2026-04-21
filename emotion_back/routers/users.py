@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from models import Users
 from schemas import register, Response, Login, TokenResponse
-from login import create_access_token, get_current_user   # get_current_user 暂时用不到，但先导入
+from auth import create_access_token, get_current_user   # get_current_user 暂时用不到，但先导入
 from re_pw import hash_password, verify_password
 router = APIRouter(prefix="/api/users", tags=["users"])
 
