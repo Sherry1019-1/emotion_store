@@ -6,7 +6,7 @@ from models import MoodRecord, Users
 from schemas import MoodCreate, MoodOut
 from auth import get_current_user
 
-router = APIRouter(prefix="/api/moods", tags=["moods"])
+router = APIRouter()
 
 @router.post("/", response_model=MoodOut)
 async def create_mood(

@@ -1,0 +1,1175 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大五人格测试 · 心晴</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+:root {
+  --ink: #1a1035;
+  --ink-soft: #3d3460;
+  --paper: #faf8f4;
+  --paper-warm: #f5f0e8;
+  --accent: #7c5cbf;
+  --accent-light: #b39ddb;
+  --accent-glow: rgba(124,92,191,0.15);
+  --gold: #c9a84c;
+  --danger: #e57373;
+
+  --O: #5c8dd6;
+  --C: #56b888;
+  --E: #e8a44a;
+  --A: #e06b8b;
+  --N: #9b72cf;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* ===== 封面页 ===== */
+#cover {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(124,92,191,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(201,168,76,0.07) 0%, transparent 60%),
+    var(--paper);
+  text-align: center;
+}
+
+.cover-badge {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid var(--accent-light);
+  padding: 5px 16px;
+  border-radius: 20px;
+  margin-bottom: 32px;
+  background: var(--accent-glow);
+}
+
+.cover-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+.cover-title span {
+  color: var(--accent);
+}
+
+.cover-sub {
+  font-size: 1rem;
+  color: var(--ink-soft);
+  line-height: 1.7;
+  max-width: 440px;
+  margin-bottom: 40px;
+  font-weight: 300;
+}
+
+.ocean-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ocean-tag {
+  padding: 8px 18px;
+  border-radius: 24px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.tag-O { background: rgba(92,141,214,0.12); color: var(--O); border: 1px solid rgba(92,141,214,0.3); }
+.tag-C { background: rgba(86,184,136,0.12); color: var(--C); border: 1px solid rgba(86,184,136,0.3); }
+.tag-E { background: rgba(232,164,74,0.12); color: var(--E); border: 1px solid rgba(232,164,74,0.3); }
+.tag-A { background: rgba(224,107,139,0.12); color: var(--A); border: 1px solid rgba(224,107,139,0.3); }
+.tag-N { background: rgba(155,114,207,0.12); color: var(--N); border: 1px solid rgba(155,114,207,0.3); }
+
+.gender-select {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.gender-select p {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin-bottom: 12px;
+}
+
+.gender-btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.gender-btn {
+  padding: 10px 28px;
+  border-radius: 24px;
+  border: 1.5px solid var(--accent-light);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.gender-btn.active,
+.gender-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.start-btn {
+  padding: 16px 56px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 32px;
+  font-size: 1.1rem;
+  font-family: 'Noto Serif SC', serif;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  box-shadow: 0 8px 32px rgba(124,92,191,0.35);
+  transition: all 0.25s;
+}
+
+.start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(124,92,191,0.45);
+}
+
+.cover-note {
+  margin-top: 24px;
+  font-size: 0.78rem;
+  color: #aaa;
+  line-height: 1.6;
+}
+
+/* ===== 测试页 ===== */
+#test {
+  display: none;
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+.test-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(250,248,244,0.95);
+  backdrop-filter: blur(10px);
+  padding: 16px 24px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-label {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.progress-count {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.progress-bar-track {
+  height: 4px;
+  background: rgba(124,92,191,0.12);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.section-title {
+  text-align: center;
+  padding: 32px 24px 8px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.05em;
+}
+
+.section-dim-tag {
+  display: inline-block;
+  padding: 3px 14px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.questions-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 8px 20px 20px;
+}
+
+.q-card {
+  background: white;
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border-left: 4px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.q-card.answered {
+  border-left-color: var(--accent-light);
+}
+
+.q-number {
+  font-size: 0.72rem;
+  color: #bbb;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.q-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+.scale-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.scale-label {
+  font-size: 0.72rem;
+  color: #aaa;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.scale-options {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+  margin: 0 10px;
+}
+
+.scale-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid #e0e0e0;
+  background: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #aaa;
+  transition: all 0.18s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scale-btn:hover {
+  border-color: var(--accent-light);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.scale-btn.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  box-shadow: 0 3px 12px rgba(124,92,191,0.35);
+}
+
+.page-nav {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 8px 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-btn {
+  padding: 12px 32px;
+  border-radius: 24px;
+  border: 1.5px solid var(--accent-light);
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.nav-btn.primary {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 4px 20px rgba(124,92,191,0.3);
+}
+
+.nav-btn.primary:hover {
+  box-shadow: 0 6px 28px rgba(124,92,191,0.45);
+  transform: translateY(-1px);
+}
+
+.page-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.page-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  transition: all 0.2s;
+}
+
+.page-dot.active {
+  background: var(--accent);
+  transform: scale(1.3);
+}
+
+.page-dot.done {
+  background: var(--accent-light);
+}
+
+/* ===== 结果页 ===== */
+#result {
+  display: none;
+  min-height: 100vh;
+  padding: 40px 20px 80px;
+  background:
+    radial-gradient(ellipse at 10% 10%, rgba(124,92,191,0.07) 0%, transparent 50%),
+    var(--paper);
+}
+
+.result-inner {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.result-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.result-score-badge {
+  display: inline-block;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-light);
+  padding: 8px 24px;
+  border-radius: 24px;
+  margin-bottom: 20px;
+}
+
+.result-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.8rem;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.result-subtitle {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  font-weight: 300;
+}
+
+/* 雷达图 */
+.radar-wrap {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.radar-wrap h3 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1rem;
+  color: var(--ink-soft);
+  margin-bottom: 20px;
+  align-self: flex-start;
+}
+
+canvas#radarChart {
+  max-width: 320px;
+  max-height: 320px;
+}
+
+/* 维度卡片 */
+.dim-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.dim-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  border-left: 5px solid transparent;
+}
+
+.dim-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.dim-name {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.dim-score-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.dim-bar-track {
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.dim-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 1s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.dim-level {
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.dim-desc {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+/* 保存按钮 */
+.save-area {
+  text-align: center;
+  padding-top: 8px;
+}
+
+.save-btn {
+  padding: 15px 52px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 32px;
+  font-size: 1rem;
+  font-family: 'Noto Serif SC', serif;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  box-shadow: 0 8px 32px rgba(124,92,191,0.35);
+  transition: all 0.25s;
+  margin-bottom: 12px;
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto 12px;
+}
+
+.save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(124,92,191,0.45);
+}
+
+.save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.retry-btn {
+  display: block;
+  margin: 12px auto 0;
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
+.unanswered-tip {
+  color: var(--danger);
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 8px;
+  min-height: 20px;
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 封面 ===== -->
+<div id="cover">
+  <div class="cover-badge">IPIP 公共域题库 · 80题完整版</div>
+  <h1 class="cover-title">探索你的<span>内在图谱</span></h1>
+  <p class="cover-sub">基于大五人格（OCEAN）模型，这80道题将从五个维度为你绘制一幅真实的人格画像。没有好坏之分，只有独一无二的你。</p>
+
+  <div class="ocean-row">
+    <span class="ocean-tag tag-O">O 开放性</span>
+    <span class="ocean-tag tag-C">C 尽责性</span>
+    <span class="ocean-tag tag-E">E 外向性</span>
+    <span class="ocean-tag tag-A">A 宜人性</span>
+    <span class="ocean-tag tag-N">N 情绪稳定性</span>
+  </div>
+
+  <div class="gender-select">
+    <p>选择你的性别（用于校准常模，不影响结果好坏）</p>
+    <div class="gender-btns">
+      <button class="gender-btn active" data-val="F" onclick="selectGender(this)">女</button>
+      <button class="gender-btn" data-val="M" onclick="selectGender(this)">男</button>
+      <button class="gender-btn" data-val="N" onclick="selectGender(this)">不透露</button>
+    </div>
+  </div>
+
+  <button class="start-btn" onclick="startTest()">开始测试</button>
+  <p class="cover-note">约需10-15分钟 · 题目基于IPIP公共域题库(ipip.ori.org) · 数据仅用于生成你的人格报告</p>
+</div>
+
+<!-- ===== 测试页 ===== -->
+<div id="test">
+  <div class="test-header">
+    <div class="progress-info">
+      <span class="progress-label" id="progressLabel">第1页 / 共12页</span>
+      <span class="progress-count" id="progressCount">0 / 80 题已作答</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="section-title" id="sectionTitle"></div>
+
+  <div class="questions-wrap" id="questionsWrap"></div>
+
+  <div class="page-nav">
+    <button class="nav-btn" id="prevBtn" onclick="changePage(-1)" disabled>← 上一页</button>
+    <div class="page-dots" id="pageDots"></div>
+    <button class="nav-btn primary" id="nextBtn" onclick="changePage(1)">下一页 →</button>
+  </div>
+
+  <p class="unanswered-tip" id="unansweredTip"></p>
+</div>
+
+<!-- ===== 结果页 ===== -->
+<div id="result">
+  <div class="result-inner">
+    <div class="result-header">
+      <div class="result-score-badge" id="scoreBadge">O··-C··-E··-A··-N··</div>
+      <h2 class="result-title">你的人格图谱</h2>
+      <p class="result-subtitle">每一种组合都是独一无二的你</p>
+    </div>
+
+    <div class="radar-wrap">
+      <h3>五维度雷达图</h3>
+      <canvas id="radarChart" width="320" height="320"></canvas>
+    </div>
+
+    <div class="dim-cards" id="dimCards"></div>
+
+    <div class="save-area">
+      <button class="save-btn" id="saveBtn" onclick="saveResult()">保存到我的档案</button>
+      <button class="retry-btn" onclick="retryTest()">重新测试</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 120道题（IPIP公共域，中文翻译）
+// 每题格式：{ id, text, domain, keyed }
+// domain: O/C/E/A/N  keyed: + 正向 / - 反向
+// ============================================================
+const QUESTIONS = [
+  // ── E 外向性 (24题) ──
+  {id:1,  text:"我在聚会上喜欢与很多人交谈",         domain:"E", keyed:"+"},
+  {id:2,  text:"我很容易与陌生人建立联系",             domain:"E", keyed:"+"},
+  {id:3,  text:"我喜欢成为大家关注的焦点",             domain:"E", keyed:"+"},
+  {id:4,  text:"我总是感到充满活力与热情",             domain:"E", keyed:"+"},
+  {id:5,  text:"我乐于主动发起对话",                   domain:"E", keyed:"+"},
+  {id:6,  text:"我在社交场合感到自在",                 domain:"E", keyed:"+"},
+  {id:7,  text:"我喜欢刺激、快节奏的活动",             domain:"E", keyed:"+"},
+  {id:8,  text:"我很少感到无聊",                       domain:"E", keyed:"+"},
+  {id:9,  text:"我倾向于保持安静，不爱抛头露面",       domain:"E", keyed:"-"},
+  {id:10, text:"我在社交场合常常感到不自在",           domain:"E", keyed:"-"},
+  {id:11, text:"我不喜欢成为众人目光的焦点",           domain:"E", keyed:"-"},
+  {id:12, text:"我更喜欢独处而非参加聚会",             domain:"E", keyed:"-"},
+  {id:13, text:"我在与人交谈时很少主动开口",           domain:"E", keyed:"-"},
+  {id:14, text:"我不太擅长让人放松",                   domain:"E", keyed:"-"},
+  {id:15, text:"我经常感到精力不足",                   domain:"E", keyed:"-"},
+  {id:16, text:"我不会主动寻找刺激",                   domain:"E", keyed:"-"},
+  {id:17, text:"我讲话富有感染力，态度积极",           domain:"E", keyed:"+"},
+  {id:18, text:"我喜欢和很多不同类型的人相处",         domain:"E", keyed:"+"},
+  {id:19, text:"参加热闹的活动让我感到愉悦",           domain:"E", keyed:"+"},
+  {id:20, text:"我不介意独自一人待着",                 domain:"E", keyed:"-"},
+  {id:21, text:"我很难在社交场合放松下来",             domain:"E", keyed:"-"},
+  {id:22, text:"我喜欢把事情做得大张旗鼓",             domain:"E", keyed:"+"},
+  {id:23, text:"我会主动寻找有趣的事情做",             domain:"E", keyed:"+"},
+  {id:24, text:"我通常话不多",                         domain:"E", keyed:"-"},
+
+  // ── A 宜人性 (24题) ──
+  {id:25, text:"我在意别人的感受",                     domain:"A", keyed:"+"},
+  {id:26, text:"我愿意为别人花时间",                   domain:"A", keyed:"+"},
+  {id:27, text:"我体贴他人，富有同情心",               domain:"A", keyed:"+"},
+  {id:28, text:"我对人真诚，愿意吐露心声",             domain:"A", keyed:"+"},
+  {id:29, text:"我信任别人的善意",                     domain:"A", keyed:"+"},
+  {id:30, text:"我有时会嘲讽别人",                     domain:"A", keyed:"-"},
+  {id:31, text:"我有时对别人漠不关心",                 domain:"A", keyed:"-"},
+  {id:32, text:"我在争吵中喜欢占上风",                 domain:"A", keyed:"-"},
+  {id:33, text:"我有时会操控别人来达到目的",           domain:"A", keyed:"-"},
+  {id:34, text:"我很少感受到对别人的爱",               domain:"A", keyed:"-"},
+  {id:35, text:"我会帮助不认识的人",                   domain:"A", keyed:"+"},
+  {id:36, text:"我相信人性本善",                       domain:"A", keyed:"+"},
+  {id:37, text:"我容易宽恕别人的错误",                 domain:"A", keyed:"+"},
+  {id:38, text:"我愿意为别人做出牺牲",                 domain:"A", keyed:"+"},
+  {id:39, text:"我经常与别人发生口角",                 domain:"A", keyed:"-"},
+  {id:40, text:"我对别人的问题感到不耐烦",             domain:"A", keyed:"-"},
+  {id:41, text:"我有时会对别人粗鲁无礼",               domain:"A", keyed:"-"},
+  {id:42, text:"我不容易感动",                         domain:"A", keyed:"-"},
+  {id:43, text:"我喜欢帮助别人解决问题",               domain:"A", keyed:"+"},
+  {id:44, text:"我真诚地关心他人的幸福",               domain:"A", keyed:"+"},
+  {id:45, text:"我会主动安慰陷入困境的人",             domain:"A", keyed:"+"},
+  {id:46, text:"我在待人接物上比较强硬",               domain:"A", keyed:"-"},
+  {id:47, text:"我愿意分享自己的东西",                 domain:"A", keyed:"+"},
+  {id:48, text:"我对别人的需求不太敏感",               domain:"A", keyed:"-"},
+
+  // ── C 尽责性 (24题) ──
+  {id:49, text:"我总是把事情做完",                     domain:"C", keyed:"+"},
+  {id:50, text:"我喜欢保持东西整洁有序",               domain:"C", keyed:"+"},
+  {id:51, text:"我很注重细节",                         domain:"C", keyed:"+"},
+  {id:52, text:"我总是提前做好计划",                   domain:"C", keyed:"+"},
+  {id:53, text:"我做事有条理",                         domain:"C", keyed:"+"},
+  {id:54, text:"我很难专注于一件事",                   domain:"C", keyed:"-"},
+  {id:55, text:"我有时会让别人失望",                   domain:"C", keyed:"-"},
+  {id:56, text:"我很容易分心",                         domain:"C", keyed:"-"},
+  {id:57, text:"我总是把任务推到最后一刻",             domain:"C", keyed:"-"},
+  {id:58, text:"我对责任感到厌烦",                     domain:"C", keyed:"-"},
+  {id:59, text:"我按时完成自己承担的任务",             domain:"C", keyed:"+"},
+  {id:60, text:"我做事认真负责",                       domain:"C", keyed:"+"},
+  {id:61, text:"我很擅长制定并遵守计划",               domain:"C", keyed:"+"},
+  {id:62, text:"我喜欢按规矩做事",                     domain:"C", keyed:"+"},
+  {id:63, text:"我经常忘记把东西放回原处",             domain:"C", keyed:"-"},
+  {id:64, text:"我在做重要决定前很少深思熟虑",         domain:"C", keyed:"-"},
+  {id:65, text:"我有时做事很随意",                     domain:"C", keyed:"-"},
+  {id:66, text:"我总是找到理由不努力工作",             domain:"C", keyed:"-"},
+  {id:67, text:"我以完成工作为自豪",                   domain:"C", keyed:"+"},
+  {id:68, text:"我努力追求优秀",                       domain:"C", keyed:"+"},
+  {id:69, text:"我能长时间保持专注",                   domain:"C", keyed:"+"},
+  {id:70, text:"我坚守承诺",                           domain:"C", keyed:"+"},
+  {id:71, text:"我在没做完该做的事之前，不会去玩",     domain:"C", keyed:"+"},
+  {id:72, text:"我在日常生活中比较随意散漫",           domain:"C", keyed:"-"},
+
+  // ── N 神经质/情绪稳定性 (24题) ──
+  {id:73, text:"我容易感到紧张或焦虑",                 domain:"N", keyed:"+"},
+  {id:74, text:"我经常感到悲伤或沮丧",                 domain:"N", keyed:"+"},
+  {id:75, text:"我情绪变化很大",                       domain:"N", keyed:"+"},
+  {id:76, text:"我很容易感到压力大",                   domain:"N", keyed:"+"},
+  {id:77, text:"我经常感到不安",                       domain:"N", keyed:"+"},
+  {id:78, text:"我常常担心各种事情",                   domain:"N", keyed:"+"},
+  {id:79, text:"我容易因为小事而生气",                 domain:"N", keyed:"+"},
+  {id:80, text:"我有时感到人生没有意义",               domain:"N", keyed:"+"},
+  {id:81, text:"我很少感到忧郁",                       domain:"N", keyed:"-"},
+  {id:82, text:"我情绪稳定，不容易波动",               domain:"N", keyed:"-"},
+  {id:83, text:"我不太担心未来的事情",                 domain:"N", keyed:"-"},
+  {id:84, text:"我在压力下依然能保持冷静",             domain:"N", keyed:"-"},
+  {id:85, text:"我很少被别人的看法影响",               domain:"N", keyed:"-"},
+  {id:86, text:"我通常心情比较平静",                   domain:"N", keyed:"-"},
+  {id:87, text:"我面对困难时不容易崩溃",               domain:"N", keyed:"-"},
+  {id:88, text:"我遇到挫折后能快速恢复",               domain:"N", keyed:"-"},
+  {id:89, text:"我容易被环境中的负面事情影响",         domain:"N", keyed:"+"},
+  {id:90, text:"我有时会感到极度孤独",                 domain:"N", keyed:"+"},
+  {id:91, text:"我对批评非常敏感",                     domain:"N", keyed:"+"},
+  {id:92, text:"我有时会感到嫉妒",                     domain:"N", keyed:"+"},
+  {id:93, text:"我不容易受到外界干扰",                 domain:"N", keyed:"-"},
+  {id:94, text:"我面对不确定的情况也能保持镇定",       domain:"N", keyed:"-"},
+  {id:95, text:"我在高压下很容易崩溃",                 domain:"N", keyed:"+"},
+  {id:96, text:"我整体情绪比较积极乐观",               domain:"N", keyed:"-"},
+
+  // ── O 开放性 (24题) ──
+  {id:97,  text:"我有丰富的想象力",                     domain:"O", keyed:"+"},
+  {id:98,  text:"我对各种艺术形式感兴趣",               domain:"O", keyed:"+"},
+  {id:99,  text:"我喜欢探索新奇的想法",                 domain:"O", keyed:"+"},
+  {id:100, text:"我对哲学或深刻的话题感到着迷",         domain:"O", keyed:"+"},
+  {id:101, text:"我喜欢尝试新事物",                     domain:"O", keyed:"+"},
+  {id:102, text:"我思维活跃，充满创意",                 domain:"O", keyed:"+"},
+  {id:103, text:"我对美丽的事物非常敏感",               domain:"O", keyed:"+"},
+  {id:104, text:"我对文化和人文知识很感兴趣",           domain:"O", keyed:"+"},
+  {id:105, text:"我不太喜欢改变",                       domain:"O", keyed:"-"},
+  {id:106, text:"我对艺术没有太大兴趣",                 domain:"O", keyed:"-"},
+  {id:107, text:"我更喜欢实际而非抽象的东西",           domain:"O", keyed:"-"},
+  {id:108, text:"我不太关心那些深奥的思想",             domain:"O", keyed:"-"},
+  {id:109, text:"我喜欢保持日常的规律，不喜欢变化",     domain:"O", keyed:"-"},
+  {id:110, text:"我不太有创造力",                       domain:"O", keyed:"-"},
+  {id:111, text:"我对新技术或趋势没什么好奇心",         domain:"O", keyed:"-"},
+  {id:112, text:"我不喜欢讨论抽象概念",                 domain:"O", keyed:"-"},
+  {id:113, text:"我喜欢读书和思考",                     domain:"O", keyed:"+"},
+  {id:114, text:"我容易被美好的事物感动",               domain:"O", keyed:"+"},
+  {id:115, text:"我对不同文化充满好奇",                 domain:"O", keyed:"+"},
+  {id:116, text:"我会用新的方式解决旧问题",             domain:"O", keyed:"+"},
+  {id:117, text:"我喜欢思考人生的意义",                 domain:"O", keyed:"+"},
+  {id:118, text:"我通常按照常规方式行事",               domain:"O", keyed:"-"},
+  {id:119, text:"我喜欢深入了解一件事情",               domain:"O", keyed:"+"},
+  {id:120, text:"我对周围世界充满好奇",                 domain:"O", keyed:"+"},
+];
+const REMOVE_IDS = new Set([
+  8,14,16,20,21,22,23,24,
+  30,31,33,34,39,40,41,48,
+  54,55,56,57,63,64,65,72,
+  80,89,90,91,92,95,83,84,
+  105,106,107,108,109,110,111,112
+]);
+
+const QUESTIONS_80 = QUESTIONS.filter(q => !REMOVE_IDS.has(q.id));
+
+const DIM_INFO = {
+  E: { label:"外向性", color:"var(--E)", desc_high:"你精力充沛、热情洋溢，在社交场合如鱼得水。你享受与人互动，能给周围的人带来活力与欢笑。", desc_low:"你更享受安静与独处的时光，深思熟虑。独处是你充电的方式，你的观察力往往超越喧嚣。", desc_mid:"你在外向与内向之间保持平衡，既能享受热闹，也能在独处中找到满足。" },
+  A: { label:"宜人性", color:"var(--A)", desc_high:"你温柔体贴，充满同理心。你真心关注他人的感受，是朋友和家人眼中可以依靠的人。", desc_low:"你直率而独立，不轻易被他人的期待左右，有自己清晰的判断和立场。", desc_mid:"你既能关爱他人，也能在必要时坚守自己的界限，懂得平衡付出与自我。" },
+  C: { label:"尽责性", color:"var(--C)", desc_high:"你自律、勤奋，做事有始有终。你设定目标并坚定地朝它前进，值得他人信赖。", desc_low:"你灵活随性，不受条条框框的束缚，善于在变化中即兴发挥，享受当下。", desc_mid:"你知道何时该认真规划，何时该随遇而安，在自律与灵活之间找到了自己的节奏。" },
+  N: { label:"情绪稳定性", color:"var(--N)", desc_high:"你的情感世界丰富而细腻，对外界的感知非常敏锐。这份敏感是你感受美好的天赋，也是你理解他人的桥梁。", desc_low:"你情绪稳定，心理弹性强，面对压力和挫折也能保持冷静，是周围人的定海神针。", desc_mid:"你对情绪有良好的觉察，既不过分压抑，也不轻易失控，懂得与自己的感受和解。" },
+  O: { label:"开放性", color:"var(--O)", desc_high:"你充满好奇，思维开阔，对世界上一切新奇的事物都怀有热情。你的想象力和创造力是你最大的财富。", desc_low:"你务实稳重，脚踏实地。你重视经验和传统，知道什么真正有价值。", desc_mid:"你在保持实际的同时也保有一份好奇，既欣赏传统的智慧，也对新想法保持开放。" },
+};
+
+const PAGE_SIZE = 10;
+let currentPage = 0;
+let answers = {}; // { questionId: score }
+let selectedGender = "F";
+let finalResult = null;
+
+function selectGender(btn) {
+  document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedGender = btn.dataset.val;
+}
+
+function startTest() {
+  document.getElementById('cover').style.display = 'none';
+  document.getElementById('test').style.display = 'block';
+  renderPage(0);
+  updateDots();
+}
+
+const totalPages = Math.ceil(QUESTIONS_80.length / PAGE_SIZE);
+
+function renderPage(page) {
+  currentPage = page;
+  const start = page * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, QUESTIONS_80.length); // 修改点：使用 QUESTIONS_80
+  const pageQs = QUESTIONS_80.slice(start, end);
+
+  // 判断当前页的维度（用于标题显示）
+  const domains = [...new Set(pageQs.map(q => q.domain))];
+  const domainLabel = domains.map(d => DIM_INFO[d].label).join(' · ');
+  const dimColor = DIM_INFO[domains[0]].color;
+  
+  document.getElementById('sectionTitle').innerHTML =
+    `第 ${page+1} 页 <span class="section-dim-tag" style="background:${dimColor}22;color:${dimColor};border:1px solid ${dimColor}55">${domainLabel}</span>`;
+
+  // 渲染题目
+  const wrap = document.getElementById('questionsWrap');
+  wrap.innerHTML = '';
+  
+  pageQs.forEach(q => { // 修改点：只渲染当前页的题目，而非遍历全文
+    const card = document.createElement('div');
+    card.className = 'q-card' + (answers[q.id] ? ' answered' : '');
+    card.id = `qcard-${q.id}`;
+    card.innerHTML = `
+      <div class="q-number">题目 ${q.id} / 80</div>
+      <div class="q-text">${q.text}</div>
+      <div class="scale-row">
+        <span class="scale-label">非常不同意</span>
+        <div class="scale-options">
+          ${[1,2,3,4,5].map(v => `
+            <button class="scale-btn${answers[q.id]===v?' selected':''}"
+                    onclick="selectAnswer(${q.id},${v},this)">${v}</button>
+          `).join('')}
+        </div>
+        <span class="scale-label">非常同意</span>
+      </div>
+    `;
+    wrap.appendChild(card);
+  });
+
+  updateProgress();
+  updateNav();
+  document.getElementById('unansweredTip').textContent = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function selectAnswer(qId, val, btn) {
+  answers[qId] = val;
+  // 更新按钮状态
+  const card = document.getElementById(`qcard-${qId}`);
+  card.classList.add('answered');
+  card.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  updateProgress();
+}
+
+function updateProgress() {
+  const total = QUESTIONS_80.length;
+  const answered = Object.keys(answers).length;
+  document.getElementById('progressCount').textContent = `${answered} / ${total} 题已作答`;
+  document.getElementById('progressFill').style.width = `${(answered/total)*100}%`;
+  document.getElementById('progressLabel').textContent = `第 ${currentPage+1} 页 / 共 ${totalPages} 页`;
+}
+
+function updateNav() {
+  document.getElementById('prevBtn').disabled = currentPage === 0;
+  const isLast = currentPage === totalPages - 1;
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = isLast ? '查看结果 ✨' : '下一页 →';
+  nextBtn.classList.toggle('primary', true);
+}
+
+function updateDots() {
+  const dots = document.getElementById('pageDots');
+  dots.innerHTML = '';
+  for (let i = 0; i < totalPages; i++) {
+    const d = document.createElement('div');
+    d.className = 'page-dot' + (i === currentPage ? ' active' : (i < currentPage ? ' done' : ''));
+    dots.appendChild(d);
+  }
+}
+
+function changePage(dir) {
+  const isLast = currentPage === totalPages - 1;
+
+  if (dir === 1) {
+    // 检查当前页是否全部作答
+    const start = currentPage * PAGE_SIZE;
+    const end = Math.min(start + PAGE_SIZE, QUESTIONS_80.length); // 修改点
+    const pageQs = QUESTIONS_80.slice(start, end); // 修改点
+    
+    const unanswered = pageQs.filter(q => !answers[q.id]);
+    if (unanswered.length > 0) {
+      document.getElementById('unansweredTip').textContent =
+        `本页还有 ${unanswered.length} 道题未作答，请全部完成后再继续`;
+      document.getElementById(`qcard-${unanswered[0].id}`)?.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+
+    if (isLast) {
+      showResult();
+      return;
+    }
+  }
+
+  const newPage = currentPage + dir;
+  renderPage(newPage);
+  updateDots();
+}
+
+// ============================================================
+// 计算得分（纯前端版，不依赖后端）
+// ============================================================
+function calcScores() {
+  const raw = { O:0, C:0, E:0, A:0, N:0 };
+  const count = { O:0, C:0, E:0, A:0, N:0 };
+
+  QUESTIONS_80.forEach(q => { // 修改点
+    const val = answers[q.id];
+    if (!val) return;
+    const scored = q.keyed === '+' ? val : (6 - val);
+    raw[q.domain] += scored;
+    count[q.domain]++;
+  });
+
+  const result = {};
+  for (const d in raw) {
+    const min = count[d] * 1;
+    const max = count[d] * 5;
+    // 防止除以0，如果没有题目则默认为50分
+    result[d] = count[d] > 0 ? Math.round(((raw[d] - min) / (max - min)) * 100) : 50;
+  }
+  return result;
+}
+
+function showResult() {
+  const scores = calcScores();
+  finalResult = scores;
+
+  document.getElementById('test').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
+
+  const scoreStr = `O${scores.O}-C${scores.C}-E${scores.E}-A${scores.A}-N${scores.N}`;
+  document.getElementById('scoreBadge').textContent = scoreStr;
+
+  // 渲染维度卡片
+  const cards = document.getElementById('dimCards');
+  cards.innerHTML = '';
+  ['O','C','E','A','N'].forEach(d => {
+    const info = DIM_INFO[d];
+    const score = scores[d];
+    let level, levelColor, desc;
+    if (score >= 65) { level = '偏高'; levelColor = info.color; desc = info.desc_high; }
+    else if (score <= 35) { level = '偏低'; levelColor = '#aaa'; desc = info.desc_low; }
+    else { level = '居中'; levelColor = '#888'; desc = info.desc_mid; }
+
+    const card = document.createElement('div');
+    card.className = 'dim-card';
+    card.style.borderLeftColor = info.color;
+    card.innerHTML = `
+      <div class="dim-card-header">
+        <span class="dim-name" style="color:${info.color}">${info.label}</span>
+        <span class="dim-score-num" style="color:${info.color}">${score}</span>
+      </div>
+      <div class="dim-bar-track">
+        <div class="dim-bar-fill" style="width:0%;background:${info.color}" data-width="${score}%"></div>
+      </div>
+      <div class="dim-level" style="color:${levelColor}">${level}</div>
+      <div class="dim-desc">${desc}</div>
+    `;
+    cards.appendChild(card);
+  });
+
+  // 动画进度条
+  setTimeout(() => {
+    document.querySelectorAll('.dim-bar-fill').forEach(bar => {
+      bar.style.width = bar.dataset.width;
+    });
+  }, 100);
+
+  // 画雷达图
+  drawRadar(scores);
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================================
+// 雷达图（纯Canvas，不依赖Chart.js）
+// ============================================================
+function drawRadar(scores) {
+  const canvas = document.getElementById('radarChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const R = Math.min(W, H) * 0.38;
+
+  const labels = ['O 开放', 'C 尽责', 'E 外向', 'A 宜人', 'N 稳定'];
+  const colors = ['var(--O)', 'var(--C)', 'var(--E)', 'var(--A)', 'var(--N)'];
+  const hexColors = ['#5c8dd6','#56b888','#e8a44a','#e06b8b','#9b72cf'];
+  const vals = [scores.O, scores.C, scores.E, scores.A, scores.N].map(v => v / 100);
+  const n = 5;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // 背景网格
+  for (let ring = 1; ring <= 5; ring++) {
+    const r = R * ring / 5;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+      const x = cx + r * Math.cos(angle);
+      const y = cy + r * Math.sin(angle);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(0,0,0,0.07)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // 轴线
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(angle), cy + R * Math.sin(angle));
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // 数据填充
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    const r = R * vals[i];
+    const x = cx + r * Math.cos(angle);
+    const y = cy + r * Math.sin(angle);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(124,92,191,0.15)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(124,92,191,0.7)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 数据点
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    const r = R * vals[i];
+    const x = cx + r * Math.cos(angle);
+    const y = cy + r * Math.sin(angle);
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = hexColors[i];
+    ctx.fill();
+  }
+
+  // 标签
+  ctx.font = `500 13px 'Noto Sans SC', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    const labelR = R + 28;
+    const x = cx + labelR * Math.cos(angle);
+    const y = cy + labelR * Math.sin(angle);
+    ctx.fillStyle = hexColors[i];
+    ctx.fillText(labels[i], x, y);
+  }
+}
+
+// ============================================================
+// 保存到后端
+// ============================================================
+async function saveResult() {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    alert('\u8bf7\u5148\u767b\u5f55\u540e\u518d\u4fdd\u5b58\u7ed3\u679c\uff08\u56de\u5230\u5fc3\u6674\u4e3b\u9875\u767b\u5f55\uff09');
+    return;
+  }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = '\u4fdd\u5b58\u4e2d...';
+
+  const scores = finalResult;
+  const scoreStr = `O${scores.O}-C${scores.C}-E${scores.E}-A${scores.A}-N${scores.N}`;
+
+  try {
+    const res = await fetch('http://127.0.0.1:8081/api/users/me/big_five', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ result: scoreStr })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || '\u4fdd\u5b58\u5931\u8d25');
+    }
+
+    // 1. \u5199\u5165 localStorage\uff0c\u89e6\u53d1 emotion.html \u7684 storage \u76d1\u542c\u5668\u540c\u6b65
+    localStorage.setItem('bf_score_result', scoreStr);
+    localStorage.setItem('bf_score_timestamp', Date.now().toString());
+
+    // 2. \u66f4\u65b0\u6309\u9215
+    btn.textContent = '\u2713 \u5df2\u4fdd\u5b58\u5230\u6863\u6848';
+    btn.style.background = '#56b888';
+
+    // 3. \u663e\u793a\u5f97\u5206\u7801\u63d0\u793a
+    const existing = btn.parentNode.querySelector('.bf-saved-tip');
+    if (!existing) {
+      const tip = document.createElement('p');
+      tip.className = 'bf-saved-tip';
+      tip.style.cssText = 'text-align:center;margin-top:12px;color:#56b888;font-size:0.9rem;';
+      tip.textContent = `\u5f97\u5206\u7801 ${scoreStr} \u5df2\u540c\u6b65\u5230\u4f60\u7684\u4e2a\u4eba\u6863\u6848`;
+      btn.parentNode.appendChild(tip);
+    }
+
+    // 4. \u5982\u679c\u662f window.open \u6253\u5f00\u7684\uff0c\u901a\u77e5\u7236\u9875\u9762\u5e76\u5173\u95ed
+    if (window.opener) {
+      window.opener.postMessage({ type: 'BF_SAVED', score: scoreStr }, '*');
+      setTimeout(() => window.close(), 1800);
+    }
+
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '\u4fdd\u5b58\u5230\u6211\u7684\u6863\u6848';
+    alert('\u4fdd\u5b58\u5931\u8d25\uff1a' + e.message);
+  }
+}
+
+function retryTest() {
+  if (!confirm('确定要重新测试吗？当前结果将被清除。')) return;
+  answers = {};
+  finalResult = null;
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('cover').style.display = 'flex';
+}
+</script>
+</body>
+</html>

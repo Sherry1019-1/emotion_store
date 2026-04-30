@@ -1,7 +1,7 @@
 const { createApp } = Vue;
 
 // API 基础地址（后端运行地址）
-const API_BASE = "http://124.222.15.227:8000/api";
+const API_BASE = "/api";
 
 // 获取存储的 token
 function getToken() {
@@ -19,19 +19,20 @@ axios.interceptors.request.use(config => {
 
 // 封装通用请求函数
 async function apiCall(url, method, data = null) {
+    const fullUrl = `http://127.0.0.1:8081${API_BASE}${url}`; // 明确指向后端端口
     try {
         const res = await axios({
-            method,
-            url: `${API_BASE}${url}`,
+            method: method.toLowerCase(),
+            url: fullUrl,
             data,
         });
         return res.data;
     } catch (error) {
-        console.error('API 错误', error);
-        if (error.response?.status === 401) {
-            localStorage.removeItem('access_token');
-            location.reload();
-        }
+        console.error('请求详情:', {
+            url: fullUrl,
+            method: method,
+            status: error.response?.status
+        });
         throw error;
     }
 }
@@ -46,17 +47,21 @@ createApp({
             // ===== 2. 心情便签数据 =====
             diaryInput: '',
             inputValue: '',
+            diaryEmoji: '',
             selectedEmj: '',
             currentYear: new Date().getFullYear(),
             currentMonth: new Date().getMonth(),
             showRecordModal: false,
+            activeArchive: null,
+            isArchiveOpen: false,
             modalDate: '',
             modalRecords: [],
             moodRecords: [],
-
+            diaryList: [],
             // ===== 3. 小伴AI =====
             aiInput: '',
             aiTyping: false,
+            emotionPattern: '',
             aiMessages: [
                 { role: 'assistant', text: '你好呀，我是小伴。今天感觉怎么样？无论开心还是难过，我都会一直安静地陪着你。' }
             ],
@@ -82,7 +87,7 @@ createApp({
             newWarmWord: '',
             showTipModal: false,
             currentTip: null,
-            
+            guideRefreshTimer:null,
             warmWords: [],
             topTipsRanking: [],
             
@@ -97,6 +102,7 @@ createApp({
             // ===== 5. 树洞数据 =====
             treeholeMessage: '',
             treeholeReply: '',
+            treeholeList: [],
             submitted: false,
             submitting: false,
             treeholeHistory: [],
@@ -118,11 +124,17 @@ createApp({
             showThrowAnimation: false,
             pickingBottle: false,
             showPickAnimation: false,
-            pickedBottle: null,
+            pickedBottle: {
+            comments: []
+            },
+
             myBottles: [],
             allBottles: [],
             showCommentModal: false,
-
+            selectedConfession: null,  // 存储当前选中的心事对象
+            showDetailModal: false,    // 控制详情弹窗显示
+            activeCommentId: null,      // 当前展开评论输入框的心事ID
+             showPickedCommentBox: false, // 是否显示漂流瓶评论输入框
             // ===== 6. 用户系统数据 =====
             currentUser: null,
             showLoginModal: false,
@@ -131,8 +143,13 @@ createApp({
             expandedMood: new Set(),
             registerForm: {
                 username: '', password: '', avatar: '', avatarFile: null,
-                gender: '', zodiac: '', mbti: '',
+                gender: ''
             },
+            isAttachmentOpen: false,
+            
+            attachmentResult: "", 
+        bigFiveInput: "", // 用于大五人格输入框绑定
+        isReTesting: false, // 是否处于“重新测试”模式
 
             // ===== 7. 静态数据 =====
             wordslist: [
@@ -153,7 +170,46 @@ createApp({
                 "🫩","😪","😷","🤒","🤕","🤢","��","😵‍💫","🥳","😮","😱","😭","🥹","😨","😤",
                 "🤬","🤡","💩","💘","💔","😘"
             ],
-            zodiacSigns: ["白羊座","金牛座","双子座","巨蟹座","狮子座","处女座","天秤座","天蝎座","射手座","摩羯座","水瓶座","双鱼座"]
+            attachmentQuestions: [
+  // 🟢 安全型 (7题)
+  { text: "我在亲密关系中通常感到安心", type: "安全型", score: null },
+  { text: "我相信对方是稳定可靠的", type: "安全型", score: null },
+  { text: "我既能依赖别人，也能保持自我", type: "安全型", score: null },
+  { text: "我能自然表达自己的情感", type: "安全型", score: null },
+  { text: "关系出现问题时，我愿意沟通解决", type: "安全型", score: null },
+  { text: "我不太担心被抛弃", type: "安全型", score: null },
+  { text: "即使短暂分开，我也能保持稳定情绪", type: "安全型", score: null },
+
+  // 🔴 焦虑型 (8题)
+  { text: "我常担心对方不够爱我", type: "焦虑型", score: null },
+  { text: "对方回复慢会让我焦虑", type: "焦虑型", score: null },
+  { text: "我需要频繁确认关系是否稳定", type: "焦虑型", score: null },
+  { text: "我很在意对方对我的态度变化", type: "焦虑型", score: null },
+  { text: "我容易在关系中投入过多情绪", type: "焦虑型", score: null },
+  { text: "我害怕被忽视或被替代", type: "焦虑型", score: null },
+  { text: "我会反复猜测对方的想法", type: "焦虑型", score: null },
+  { text: "当对方冷淡时，我会很难受", type: "焦虑型", score: null },
+
+  // 🔵 回避型 (8题)
+  { text: "我不太喜欢依赖别人", type: "回避型", score: null },
+  { text: "亲密关系让我有压力", type: "回避型", score: null },
+  { text: "我更习惯独自处理问题", type: "回避型", score: null },
+  { text: "我不喜欢别人过多了解我", type: "回避型", score: null },
+  { text: "我会刻意保持情感距离", type: "回避型", score: null },
+  { text: "我不太愿意表达脆弱", type: "回避型", score: null },
+  { text: "当别人靠近时，我会后退", type: "回避型", score: null },
+  { text: "我觉得依赖别人是不必要的", type: "回避型", score: null },
+
+  // ⚫ 恐惧型 (7题)
+  { text: "我既渴望亲密，又害怕亲密", type: "恐惧型", score: null },
+  { text: "我对关系常常感到矛盾", type: "恐惧型", score: null },
+  { text: "我有时很依赖，有时又想逃离", type: "恐惧型", score: null },
+  { text: "我不确定别人是否值得信任", type: "恐惧型", score: null },
+  { text: "当关系变近时，我反而会不安", type: "恐惧型", score: null },
+  { text: "我容易在关系中情绪失控", type: "恐惧型", score: null },
+  { text: "我觉得亲密关系既重要又危险", type: "恐惧型", score: null }
+],
+attachmentResult: "", // 存放最终结论
         }
     },
 
@@ -210,7 +266,70 @@ createApp({
     },
 
     methods: {
-        // ===== 小伴AI =====
+
+getCommentCount(comments) {
+    // 增加更严格的检查
+    if (!comments || comments === null || comments === undefined) return 0;
+    try {
+        // 兼容处理：如果是字符串则解析，如果是数组则直接取长度
+        const list = typeof comments === 'string' ? JSON.parse(comments) : comments;
+        return Array.isArray(list) ? list.length : 0;
+    } catch (e) {
+        console.warn('解析评论数据失败:', e);
+        return 0;
+    }
+},
+    
+    // 建议顺便把 getLikeCount 也加上，防止后续点赞报错
+    getLikeCount(likes) {
+        if (typeof likes === 'number') return likes;
+        try {
+            const list = typeof likes === 'string' ? JSON.parse(likes) : likes;
+            return Array.isArray(list) ? list.length : (parseInt(likes) || 0);
+        } catch (e) {
+            return 0;
+        }
+},
+// 在 emotion.js 的 methods 中添加
+openConfessionDetail(item) {
+    if (!item) return;
+    
+    // 强行保证 comments 是数组，防止后端返回 null 或字符串
+    let safeComments = [];
+    if (typeof item.comments === 'string') {
+        try { safeComments = JSON.parse(item.comments); } catch(e) {}
+    } else if (Array.isArray(item.comments)) {
+        safeComments = item.comments;
+    }
+    
+    // 创建一个副本，防止修改原始列表
+    this.selectedConfession = { ...item, comments: safeComments };
+    this.showDetailModal = true;
+},
+    closeDetailModal() {
+        this.showDetailModal = false;
+        this.selectedConfession = null;
+    },
+async toggleLike(item) {
+    try {
+        await apiCall(`/treehole/public/${item.id}/like`, 'post');
+        this.loadPublicData(); // 刷新列表
+        if (this.selectedConfession) {
+            // 如果在弹窗里，也要同步更新数据
+            const res = await apiCall('/treehole/public', 'get');
+            this.selectedConfession = res.find(x => x.id === item.id);
+        }
+    } catch (e) {
+        alert(e.response?.data?.detail || "操作失败");
+    }
+},
+
+// 顺便把 hasLiked 也补上，防止样式报错
+hasLiked(item) {
+    if (!item || !item.liked_users || !this.currentUser) return false;
+    const likedList = typeof item.liked_users === 'string' ? JSON.parse(item.liked_users) : item.liked_users;
+    return Array.isArray(likedList) && likedList.includes(this.currentUser.id);
+},        // ===== 小伴AI =====
         async sendAiMessage() {
             if (!this.aiInput.trim()) return;
             const userText = this.aiInput;
@@ -233,21 +352,116 @@ createApp({
                 if (win) win.scrollTop = win.scrollHeight;
             });
         },
+async fetchPublicConfessions() {
+  try {
+    let res = await apiCall('/treehole/public', 'get');
+
+    res = (res || [])
+      .filter(Boolean)           // 过滤掉 undefined / null 项
+      .map(item => {
+        // 防御：如果后台突然返回了奇怪的东西
+        if (!item || typeof item !== 'object') {
+          return { id: null, message: '', comments: [], likes: 0 };
+        }
+
+        // 确保 comments 是数组
+        if (!item.comments) {
+          item.comments = [];
+        } else if (typeof item.comments === 'string') {
+          try {
+            item.comments = JSON.parse(item.comments);
+          } catch (e) {
+            item.comments = [];
+          }
+        }
+
+        return item;
+      });
+
+    this.publicConfessions = res;
+  } catch (e) {
+    console.error("加载公开心事失败", e);
+    this.publicConfessions = [];
+  }
+}
+,
+//小伴AI
+
+async generateEmotionPattern() {
+    if (!this.currentUser) {
+        alert('请先登录再生成情绪模式（在"我的空间"里登录）');
+        return;
+    }
+ 
+    this.aiTyping = true;
+    this.emotionPattern = '';
+ 
+    try {
+        // 心情记录：取最近 20 条
+        const moodRecords = (this.moodRecords || []).slice(-20).map(m => ({
+            mood_score: typeof m.mood_score === 'number' ? m.mood_score : 5,
+            mood_label: m.emoji || null,
+            note: m.text || null,
+            created_at: m.time
+                ? new Date(m.time).toISOString()
+                : new Date().toISOString()
+        }));
+ 
+        // 树洞记录：取最近 20 条
+        const treeHoles = (this.treeholeHistory || []).slice(-20).map(t => ({
+            content: t.message || '',
+            created_at: t.time
+                ? new Date(t.time).toISOString()
+                : new Date().toISOString()
+        }));
+ 
+        // 聊天记录：跳过第一条默认欢迎语，取最近 30 条
+        const chatHistory = (this.aiMessages || []).slice(1, 31).map(m => ({
+            role: m.role === 'assistant' ? 'assistant' : 'user',
+            content: m.text || '',
+            created_at: null
+        }));
+ 
+        const body = {
+            tree_holes: treeHoles,
+            mood_records: moodRecords,
+            chat_history: chatHistory,
+            period_label: '最近一段时间',
+            // 直接从 currentUser 取，/users/me 登录后已经拿到了
+            big_five: this.currentUser.big_five || null,
+            attachment_style: this.currentUser.attachment_style || null
+        };
+ 
+        const res = await apiCall('/ai/emotion-report', 'post', body);
+        this.emotionPattern = res.report || '暂时没有生成结果，请稍后再试～';
+ 
+    } catch (e) {
+        console.error('生成情绪模式失败:', e);
+        alert(e.response?.data?.detail || '生成情绪模式失败，请稍后重试');
+    } finally {
+        this.aiTyping = false;
+    }
+},
+ 
+
 
         // ===== 心晴指南方法 =====
         toggleTipDetail(index) { this.emotionTips[index].expanded = !this.emotionTips[index].expanded; },
         openTipModal(tip) { this.currentTip = tip; this.showTipModal = true; },
         closeTipModal() { this.showTipModal = false; this.currentTip = null; },
         
-        async likeCommunityTip(tip) {
-            try {
-                await apiCall(`/community/tips/${tip.id}/like`, 'post');
-                this.communityTips = await apiCall('/community/tips', 'get');
-                this.updateTopTipsRanking();
-            } catch(e) {
-                alert('点赞失败');
-            }
-        },
+async likeCommunityTip(tip) {
+    try {
+        const res = await apiCall(`/community/tips/${tip.id}/like`, 'post');
+        tip.likes = res.likes;
+    } catch (e) {
+        if (e.response?.status === 400) {
+            alert(e.response.data.detail || '你已经点过赞啦');
+        } else {
+            alert('点赞失败');
+        }
+    }
+},
         async submitCommunityTip() {
             if (!this.newCommunityTip.trim()) return;
             try {
@@ -259,14 +473,18 @@ createApp({
                 alert('发布失败');
             }
         },
-        async likeWarmWord(word) {
-            try {
-                await apiCall(`/community/warmwords/${word.id}/like`, 'post');
-                this.warmWords = await apiCall('/community/warmwords', 'get');
-            } catch(e) {
-                alert('点赞失败');
-            }
-        },
+async likeWarmWord(word) {
+    try {
+        const res = await apiCall(`/community/warmwords/${word.id}/like`, 'post');
+        word.likes = res.likes;
+    } catch (e) {
+        if (e.response?.status === 400) {
+            alert(e.response.data.detail || '你已经点过赞啦');
+        } else {
+            alert('点赞失败');
+        }
+    }
+},
         async submitWarmWord() {
             if (!this.newWarmWord.trim()) return;
             try {
@@ -300,13 +518,15 @@ createApp({
         async recieve() {
             if (!this.inputValue.trim()) return alert("请写下一些感受吧～");
             try {
+                const emoji = this.diaryEmoji || this.selectedEmj || "💭";
                 const newRecord = await apiCall('/moods', 'post', {
-                    emoji: this.selectedEmj || "💭",
+                    emoji: emoji,
                     text: this.inputValue
                 });
                 this.moodRecords.unshift(newRecord);
-                alert("心情便签已保存！");
+                alert("叮！心情已妥投至档案本。");
                 this.inputValue = '';
+                this.diaryEmoji = '';
                 this.selectedEmj = '';
             } catch(e) {
                 alert("保存失败");
@@ -352,57 +572,128 @@ createApp({
                 this.submitting = false;
             }
         },
-        // 保留于公开心事（后端）的评论函数
-        async submitComment(confession) {
-            if (!this.newCommentText.trim()) return;
-            try {
-                const target = confession || this.currentDetail;
-                if (!target || !target.id) {
-                    alert('无法找到要评论的心事');
-                    return;
-                }
-                await apiCall(`/treehole/public/${target.id}/comment`, 'post', { text: this.newCommentText });
-                // 刷新公开心事列表
-                this.publicConfessions = await apiCall('/treehole/public', 'get');
-                if (this.currentDetail && this.currentDetail.id === target.id) {
-                    this.currentDetail = this.publicConfessions.find(c => c.id === target.id) || this.currentDetail;
-                }
-                this.newCommentText = '';
-                alert('留言已发送');
-            } catch(e) {
-                console.error(e);
-                alert('评论失败');
-            }
-        },
-        getCommentCount(confession) {
-    if (!confession) return 0;
-    if (!confession.comments) return 0;
-    return confession.comments.length;
-},
-        openConfessionDetail(detail) {
-            this.currentDetail = detail;
-            if (!this.currentDetail.comments) {
-                this.currentDetail.comments = [];
-            }
-            this.showConfessionDetail = true;
-        },
-        closeConfessionDetail() {
-            this.showConfessionDetail = false;
-            this.currentDetail = null;
-            this.newCommentText = '';
-        },
+ async submitComment(confession) {
+    // ===== 1. 基础校验 =====
+    if (!this.newCommentText || !this.newCommentText.trim()) {
+        return;
+    }
 
-        async likeConfession(confession) {
-            try {
-                await apiCall(`/treehole/public/${confession.id}/like`, 'post');
-                this.publicConfessions = await apiCall('/treehole/public', 'get');
-                if (this.currentDetail && this.currentDetail.id === confession.id) {
-                    this.currentDetail = this.publicConfessions.find(c => c.id === confession.id);
-                }
-            } catch(e) {
-                alert('点赞失败');
+    try {
+        // ===== 2. 调用后端接口 =====
+        const res = await apiCall(
+            `/public/${confession.id}/comment`,
+            'post',
+            {
+                text: this.newCommentText
             }
-        },
+        );
+
+        console.log("[debug] 评论返回:", res);
+
+        // ===== 3. 初始化 comments（防止 undefined）=====
+        if (!confession.comments) {
+            confession.comments = [];
+        }
+
+        // ===== 4. 如果后端返回了 comment，直接插入（更快）=====
+        if (res.comment) {
+            confession.comments.push(res.comment);
+        } else {
+            // ===== 5. 兜底：重新拉取 =====
+            const updated = await apiCall(`/public/${confession.id}`, 'get');
+
+            if (typeof updated.comments === 'string') {
+                try {
+                    updated.comments = JSON.parse(updated.comments);
+                } catch {
+                    updated.comments = [];
+                }
+            }
+
+            confession.comments = updated.comments;
+        }
+
+        // ===== 6. 如果当前在详情弹窗里，同步更新 =====
+        if (this.selectedConfession && this.selectedConfession.id === confession.id) {
+            this.selectedConfession.comments = confession.comments;
+        }
+
+        // ===== 7. 清空输入框 =====
+        this.newCommentText = '';
+
+    } catch (e) {
+        console.error("评论失败:", e);
+
+        alert(
+            e?.response?.data?.detail ||
+            "评论失败，请稍后再试"
+        );
+    }
+},
+// --- 1. 点赞公开心事 (Ta的心事) ---
+ async likeConfession(confession) {
+        try {
+            const res = await apiCall(`/treehole/public/${confession.id}/like`, 'post');
+            confession.likes = res.likes;
+        } catch (e) {
+            if (e.response?.status === 400) {
+                alert(e.response.data.detail || '你已经点过赞啦');
+            } else {
+                console.error(e);
+            }
+        }
+    },
+     startGuideAutoRefresh() {
+    if (this.guideRefreshTimer) return;        // 已经有定时器就不重复建
+
+    // 先立即拉一次最新数据
+    this.loadPublicData();
+
+    // 每 30 秒刷新一次（你可以自己改成 10000 = 10 秒）
+    this.guideRefreshTimer = setInterval(() => {
+      this.loadPublicData();
+    }, 30000);
+  },
+
+  // 停止心晴指南自动刷新
+  stopGuideAutoRefresh() {
+    if (this.guideRefreshTimer) {
+      clearInterval(this.guideRefreshTimer);
+      this.guideRefreshTimer = null;
+    }
+  },
+// 打开内联评论框
+openInlineComment(confession) {
+    if (!confession.comments) confession.comments = [];
+    if (this.activeCommentId === confession.id) {
+        this.activeCommentId = null;
+        this.newCommentText = '';
+    } else {
+        this.activeCommentId = confession.id;
+        this.newCommentText = '';
+    }
+},
+
+    // 提交内联评论
+  async submitInlineComment(confession) {
+    if (!this.newCommentText.trim()) return;
+    if (!confession.comments) confession.comments = [];
+    try {
+        await apiCall(`/treehole/public/${confession.id}/comment`, 'post', {
+            text: this.newCommentText
+        });
+        confession.comments.push({
+            username: this.currentUser?.username || '匿名',
+            text: this.newCommentText,
+            time: new Date().toISOString()
+        });
+        await this.fetchPublicConfessions(); // 可选，刷新整个列表
+        this.newCommentText = '';
+        this.activeCommentId = null;
+    } catch (e) {
+        alert('评论失败');
+    }
+},
 
         // ===== 漂流瓶功能 =====
         formatRelativeTime(time) {
@@ -433,19 +724,32 @@ createApp({
         },
 
         // 本地提交捡到瓶子的留言（若需要持久化可以改为调用后端 API）
-        submitPickedBottleComment() {
-            if (!this.newCommentText.trim()) return;
-            if (!this.pickedBottle) return;
+       async submitPickedBottleComment() {
+    if (!this.newCommentText.trim()) return alert("写点什么吧");
+    if (!this.pickedBottle?.id) return;
 
-            this.pickedBottle.comments.push({
-              text: this.newCommentText,
-              time: Date.now()
-            });
-
-            this.newCommentText = "";
-            // 如果希望提交后同时关闭弹窗，可启用下面这一行：
-            // this.showCommentModal = false;
-        },
+    try {
+        // 发送评论到后端
+        await apiCall(`/bottles/${this.pickedBottle.id}/comment`, 'post', {
+            text: this.newCommentText
+        });
+        
+        // 乐观更新：直接在本地添加新评论（不依赖后端 GET 接口）
+        if (!this.pickedBottle.comments) this.pickedBottle.comments = [];
+        this.pickedBottle.comments.push({
+            username: this.currentUser?.username || "匿名",
+            text: this.newCommentText,
+            time: new Date().toISOString()
+        });
+        
+        this.newCommentText = '';
+        this.showPickedCommentBox = false; // 如果你使用了内联评论框，关闭它
+        alert("留言已放入瓶中");
+    } catch (e) {
+        console.error("评论失败", e);
+        alert(e.response?.data?.detail || "发送失败，请稍后重试");
+    }
+},
 
         // 在详情中查看被捡到的瓶子（复用详情弹窗）
         goCommentPickedBottle() {
@@ -463,7 +767,7 @@ createApp({
         // 改进的 throwBottle：增加调试日志、友好提示、刷新数据
         async throwBottle() {
             console.log('[debug] throwBottle clicked', { bottleMessage: this.bottleMessage, currentUser: this.currentUser ? {
-                id: this.currentUser.id, mbti: this.currentUser.mbti, zodiac: this.currentUser.zodiac
+                id: this.currentUser.id, big_five: this.currentUser.big_five, attachment_style: this.currentUser.attachment_style
             } : null });
 
             if (!this.bottleMessage.trim() || this.throwingBottle) return;
@@ -472,8 +776,8 @@ createApp({
                 alert('请先登录再扔漂流瓶（点击 我的空间 → 登录/注册）');
                 return;
             }
-            if (!this.currentUser.mbti || !this.currentUser.zodiac) {
-                alert('请先完善 MBTI 与星座信息（进入 我的空间 完成资料）');
+            if (!this.currentUser.big_five || !this.currentUser.attachment_style) {
+                alert('请先完善 大五人格测试 与 依恋人格类型（进入 我的空间 完成资料）');
                 return;
             }
 
@@ -511,68 +815,87 @@ createApp({
             }
         },
 
-        async pickBottle() {
-            if (this.pickingBottle) return;
-            this.pickingBottle = true;
-            try {
-                const bottle = await apiCall('/bottles/pick', 'post');
-                this.pickedBottle = bottle;
-                this.showPickAnimation = true;
-                setTimeout(() => this.showPickAnimation = false, 1500);
-            } catch(e) {
-                alert(e.response?.data?.detail || '没有捡到瓶子');
-            } finally {
-                this.pickingBottle = false;
-            }
-        },
+async pickBottle() {
+  this.pickingBottle = true;
+  try {
+    const res = await apiCall('/bottles/pick', 'post');
+    let bottle = res.bottle || {};
 
-        async likePickedBottle() {
-            if (!this.pickedBottle) return;
-            try {
-                await apiCall(`/bottles/${this.pickedBottle.id}/like`, 'post');
-                this.pickedBottle.likes = (this.pickedBottle.likes || 0) + 1;
-            } catch(e) {
-                alert('点赞失败');
-            }
-        },
+    // 强制保证 comments 是数组
+    if (!bottle.comments) {
+      bottle.comments = [];
+    } else if (typeof bottle.comments === 'string') {
+      try {
+        bottle.comments = JSON.parse(bottle.comments);
+      } catch {
+        bottle.comments = [];
+      }
+    }
+
+    this.pickedBottle = bottle;
+
+    if (res.lucky) {
+      alert(res.lucky_msg);
+    }
+  } catch (e) {
+    console.error("打捞失败", e);
+    alert(e.response?.data?.detail || "海面上空如也");
+  } finally {
+    this.pickingBottle = false;
+  }
+}
+,
+
+// 2. 修改点赞逻辑
+// --- 2. 点赞捡到的瓶子 ---
+async likePickedBottle() {
+    if (!this.pickedBottle?.id) return;
+    try {
+        const res = await apiCall(`/bottles/${this.pickedBottle.id}/like`, 'post');
+        this.pickedBottle.likes = res.likes;
+    } catch (e) {
+        if (e.response?.status === 400) {
+            alert(e.response.data.detail);
+        }
+    }
+},
+   togglePickedComment() {
+        this.showPickedCommentBox = !this.showPickedCommentBox;
+        if (!this.showPickedCommentBox) this.newCommentText = '';
+    },
+// 3. 修改留言逻辑
+async submitPickedBottleComment() {
+        if (!this.newCommentText.trim()) return;
+        try {
+            await apiCall(`/bottles/${this.pickedBottle.id}/comment`, 'post', {
+                text: this.newCommentText
+            });
+            // 重新获取瓶子详情以刷新评论
+            const updated = await apiCall(`/bottles/${this.pickedBottle.id}`, 'get');
+            this.pickedBottle.comments = updated.comments;
+            this.newCommentText = '';
+            this.showPickedCommentBox = false;
+        } catch (e) {
+            alert('留言失败');
+        }
+    },
 
         closePickedBottle() {
             this.pickedBottle = null;
         },
 
-        calculateMBTISimilarity(mbti1, mbti2) {
-            if (!mbti1 || !mbti2) return 0;
-            let same = 0;
-            for (let i = 0; i < 4; i++) if (mbti1[i] === mbti2[i]) same++;
-            return same;
-        },
-        calculateMBTIComplement(mbti1, mbti2) {
-            if (!mbti1 || !mbti2) return 0;
-            let diff = 0;
-            for (let i = 0; i < 4; i++) if (mbti1[i] !== mbti2[i]) diff++;
-            return diff;
-        },
-        calculateZodiacMatch(z1, z2, mode) {
-            const zodiacs = this.zodiacSigns;
-            const idx1 = zodiacs.indexOf(z1);
-            const idx2 = zodiacs.indexOf(z2);
-            if (idx1 === -1 || idx2 === -1) return 0;
-            const diff = Math.abs(idx1 - idx2);
-            const circleDiff = Math.min(diff, 12 - diff);
-            if (mode === 'similar') {
-                if (circleDiff === 0) return 3;
-                if (circleDiff === 4 || circleDiff === 8) return 2;
-                return 1;
-            } else {
-                if (circleDiff === 6) return 3;
-                if (circleDiff === 3 || circleDiff === 9) return 2;
-                return 1;
-            }
-        },
+       
         // ===== 用户系统 =====
         openLogin() { this.showLoginModal = true; this.showRegisterModal = false; },
         openRegister() { this.showRegisterModal = true; this.showLoginModal = false; },
         closeModals() { this.showLoginModal = false; this.showRegisterModal = false; },
+        openBigFiveTest() {
+            const w = window.open('bigfive.html', 'bigfive_test',
+                'width=800,height=700,scrollbars=yes,resizable=yes');
+            if (!w) {
+                alert('弹窗被阻止，请允许弹窗后重试，或直接点击下方链接');
+            }
+        },
         async doLogin() {
             try {
                 const res = await apiCall("/users/login", "post", {
@@ -589,16 +912,27 @@ createApp({
                 alert(detail);
             }
         },
-        async loadUserDataAfterLogin() {
-            // this.moodRecords = await apiCall('/moods', 'get');
-            // this.treeholeHistory = await apiCall('/treehole/history', 'get');
-            // this.publicConfessions = await apiCall('/treehole/public', 'get');
-            // this.communityTips = await apiCall('/community/tips', 'get');
-            // this.warmWords = await apiCall('/community/warmwords', 'get');
-            // this.myBottles = await apiCall('/bottles/my', 'get');
-            // this.allBottles = await apiCall('/bottles', 'get');
-            console.log('登录成功，用户信息已加载');
-        },
+// emotion.js
+async loadUserDataAfterLogin() {
+    // 1. 同步人格数据到 Vue 响应式变量 (这是“记住”的关键)
+    if (this.currentUser) {
+        this.attachmentResult = this.currentUser.attachment_style || "";
+        this.bigFiveInput = this.currentUser.big_five || "";
+        console.log("人格数据同步成功:", this.attachmentResult, this.bigFiveInput);
+    }
+
+    // 2. 使用 try-catch 隔离加载，防止 bottles 报错导致整个页面卡死
+    try {
+        this.moodRecords = await apiCall('/moods', 'get');
+    } catch(e) { console.error("加载心情失败"); }
+
+    try {
+        // 如果这里报 500，不会影响上面人格数据的加载
+        this.myBottles = await apiCall('/bottles/my', 'get');
+    } catch(e) { 
+        console.error("加载我的瓶子失败，后端可能代码报错"); 
+    }
+},
        
 async doRegister() {
     try {
@@ -608,8 +942,6 @@ async doRegister() {
             password: this.registerForm.password,
             img: this.registerForm.avatar,
             sex: this.registerForm.gender,
-            zodiac: this.registerForm.zodiac,
-            mbti: this.registerForm.mbti
         };
         await apiCall('/users/register', 'post', payload);
         alert('注册成功，请登录');
@@ -636,35 +968,150 @@ async doRegister() {
             reader.onload = ev => { this.registerForm.avatar = ev.target.result; };
             reader.readAsDataURL(file);
         },
-        getMBTIDescription(m) {
-            const map = {
-                'INTJ':'建筑师','INTP':'逻辑学家','ENTJ':'指挥官','ENTP':'辩论家',
-                'INFJ':'提倡者','INFP':'调停者','ENFJ':'主人公','ENFP':'竞选者',
-                'ISTJ':'物流师','ISFJ':'守卫者','ESTJ':'总经理','ESFJ':'执政官',
-                'ISTP':'鉴赏家','ISFP':'探险家','ESTP':'企业家','ESFP':'表演者'
-            };
-            return m ? (map[m] || m) : '尚未测试';
-        },
-        async loadPublicData() {
-            this.publicConfessions = await apiCall('/treehole/public', 'get');
-            this.communityTips = await apiCall('/community/tips', 'get');
-            this.warmWords = await apiCall('/community/warmwords', 'get');
+  async calcAttachment() {
+    // 检查是否全填了
+    const unfinished = this.attachmentQuestions.some(q => q.score === null);
+    if (unfinished) {
+      alert("请完成所有 30 道题目后再提交哦~");
+      return;
+    }
+
+    // 统计各类型得分
+    const stats = { "安全型": 0, "焦虑型": 0, "回避型": 0, "恐惧型": 0 };
+    this.attachmentQuestions.forEach(q => {
+      stats[q.type] += q.score;
+    });
+
+    // 找到分值最高的那一项
+    let maxType = "安全型";
+    let maxVal = -1;
+    for (let key in stats) {
+      if (stats[key] > maxVal) {
+        maxVal = stats[key];
+        maxType = key;
+      }
+    }
+
+    this.attachmentResult = maxType;
+
+    // 同步到后端 (假设你已经写好了对应的 update 接口)
+    try {
+      await apiCall('/users/me/attachment', 'post', {
+        style: maxType,
+        scores: stats
+      });
+      this.currentUser.attachment_style = maxType;
+        this.attachmentResult = maxType; 
+        this.isAttachmentOpen = false;
+      alert(`测试完成！您的依恋类型是：${maxType}`);
+    } catch (e) {
+      console.error("保存失败", e);
+    }
+},
+
+      async loadPublicData() {
+    try {
+        this.publicConfessions = await apiCall('/treehole/public', 'get');
+        this.communityTips = await apiCall('/community/tips', 'get');
+        this.warmWords = await apiCall('/community/warmwords', 'get');
+
+        // ⭐ 根据最新 communityTips 重新算排行榜
+        this.updateTopTipsRanking();
+    } catch(e) {
+        console.error('加载公开数据失败', e);
+    }
+},
+
+        async generateAIReport() {
+            this.aiLoading = true;
+            if (!this.currentUser?.attachment_style || !this.currentUser?.big_five) {
+            return alert("请先完成全部人格测试");
+}
+            const prompt = `
+                我是一个${this.currentUser.attachment_style}的人，
+                我的大五人格得分为：${this.currentUser.big_five}。
+                请从“社交偏好”、“亲密关系”、“压力应对”三个维度，
+                用文学性、温柔且深刻的语言为我写一份200字的心灵自画像。
+            `;
+            // 调用您后端已有的 AI 接口
+            const res = await apiCall('/ai/chat', 'post', { message: prompt });
+            this.aiAnalysis = res.reply;
+            this.aiLoading = false;
+
+},
+// emotion.js 中的 saveBigFive
+async saveBigFive() {
+    if(!this.bigFiveInput) return alert("请先填写结果");
+    try {
+        await apiCall('/users/me/big_five', 'post', { 
+            result: this.bigFiveInput 
+        });
+        
+        // 【关键修复 1】必须手动更新本地的 currentUser，刷新时才会有值
+        if (this.currentUser) {
+            this.currentUser.big_five = this.bigFiveInput;
         }
+        
+        alert("大五人格数据已存入深海记忆！");
+        this.generateAIReport(); 
+    } catch (e) {
+        alert("保存失败，请检查网络或登录状态");
+    }
+}
     },
 
-    async mounted() {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            try {
-                const userInfo = await apiCall('/users/me', 'get');
-                this.currentUser = userInfo;
-                await this.loadUserDataAfterLogin();
-            } catch(e) {
-                localStorage.removeItem('access_token');
-                await this.loadPublicData();
-            }
-        } else {
+   async mounted() {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+        try {
+            const userInfo = await apiCall('/users/me', 'get');
+            this.currentUser = userInfo;
+            await this.loadUserDataAfterLogin();
+        } catch(e) {
+            localStorage.removeItem('access_token');
             await this.loadPublicData();
         }
+    } else {
+        await this.loadPublicData();
     }
+    if (this.page === 'sun') {
+        this.startGuideAutoRefresh();
+    }
+
+    // ===== 监听大五人格测试窗口的保存结果 =====
+    // 方式1：postMessage（bigfive.html 用 window.open 打开时触发）
+    window.addEventListener('message', (e) => {
+        if (e.data?.type === 'BF_SAVED' && e.data.score) {
+            if (this.currentUser) {
+                this.currentUser.big_five = e.data.score;
+                this.bigFiveInput = e.data.score;
+                this.isReTesting = false;
+            }
+        }
+    });
+
+    // 方式2：storage 事件（同浏览器不同标签页时触发）
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'bf_score_result' && e.newValue) {
+            if (this.currentUser) {
+                this.currentUser.big_five = e.newValue;
+                this.bigFiveInput = e.newValue;
+                this.isReTesting = false;
+            }
+        }
+    });
+},
+watch: {
+    page(newVal) {
+        if (newVal === 'treehole') {
+            this.fetchPublicConfessions(); // 重新获取
+        }
+        if (newVal === 'sun') {
+        this.startGuideAutoRefresh();
+      } else {
+        this.stopGuideAutoRefresh();
+      }
+    }
+},
+    
 }).mount("#Store");

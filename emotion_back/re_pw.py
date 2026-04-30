@@ -1,7 +1,12 @@
-import hashlib
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(
+    schemes=["pbkdf2_sha256"],  # ✅ 改这里
+    deprecated="auto"
+)
 
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+    return pwd_context.hash(password)
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return hash_password(plain) == hashed
+def verify_password(password: str, hashed: str) -> bool:
+    return pwd_context.verify(password, hashed)
