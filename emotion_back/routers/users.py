@@ -48,7 +48,7 @@ async def login(user: Login, db: AsyncSession = Depends(get_db)):
 async def get_me(current_user: Users = Depends(get_current_user)):
     return current_user
 # --- 保存大五人格 ---
-@router.post("/me/big_five", response_model=UserOut)
+@router.post("/me/big_five", response_model=dict)
 async def update_big_five(
         data: BigFiveUpdate,
         current_user: Users = Depends(get_current_user),
@@ -56,14 +56,17 @@ async def update_big_five(
 ):
     try:
         current_user.big_five = data.result
-        current_user.big_five_done = True  # ✅ 建议加这个标记
+        current_user.big_five_done = True
 
-        db.add(current_user)
+        # 不需要 db.add(current_user)，因为 current_user 已在 session 中
         await db.commit()
         await db.refresh(current_user)
 
-        return current_user   # ✅ 直接返回完整用户
-
+        return {
+            "msg": "保存成功",
+            "big_five": data.result,
+            "big_five_done": True
+        }
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

@@ -1124,7 +1124,7 @@ async function saveResult() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ result: scoreStr })
+      body: JSON.stringify({ big_five: scoreStr })
     });
 
     if (!res.ok) {

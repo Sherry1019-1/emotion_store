@@ -86,30 +86,31 @@
     </div>
   </div>
 
-  <div :class="['history-book-wrapper', { 'is-open': isArchiveOpen }]">
-    <div class="magic-book">
-      <div class="book-cover" @click="isArchiveOpen = !isArchiveOpen" style="cursor:pointer;">
-        <div class="cover-title">情绪<br>档案</div>
-        <div class="cover-hint">{{ isArchiveOpen ? 'x' : '点击翻阅' }}</div>
-      </div>
-      <div class="book-pages">
-        <h3 class="page-title">往日回音</h3>
-        <div class="history-scroll">
-          <div v-for="(log, idx) in moodRecords"
-               :key="idx"
-               class="history-card"
-               @click="activeArchive = log">
-            <div class="history-meta">
-              <span class="history-time">{{ new Date(log.time).toLocaleString('zh-CN') }}</span>
-              <span class="history-emoji">{{ log.emoji }}</span>
-            </div>
-            <p class="history-text">{{ log.text }}</p>
+ <!-- 档案本部分 -->
+<div :class="['history-book-wrapper', { 'is-open': isArchiveOpen }]" @click="isArchiveOpen = !isArchiveOpen">
+  <div class="magic-book">
+    <!-- 封面模式 -->
+    <div v-if="!isArchiveOpen" class="book-cover">
+      <div class="cover-title">情绪档案</div>
+      <div class="cover-hint">点击翻阅</div>
+    </div>
+    
+    <!-- 展开内容模式 -->
+    <div v-else class="book-pages" @click.stop> <!-- stop 阻止点击内容关闭弹窗 -->
+      <h3 class="page-title">往日回音</h3>
+      <div class="history-scroll">
+        <div v-for="(log, idx) in moodRecords" :key="idx" class="history-card">
+          <div class="history-meta">
+            <span class="history-time">{{ new Date(log.time).toLocaleDateString() }}</span>
+            <span>{{ log.emoji }}</span>
           </div>
-          <div v-if="!moodRecords || moodRecords.length === 0" class="empty-state">本子还是空的，快去写下第一篇吧...</div>
+          <p class="history-text">{{ log.text }}</p>
         </div>
       </div>
+      <button class="close-btn" @click="isArchiveOpen = false">收起档案</button>
     </div>
   </div>
+</div>
 
 </div>
           
@@ -644,16 +645,33 @@
 </div>
       </div>
       
-      <!-- 历史瓶子 -->
-      <div class="bottle-history" v-if="myBottles.length > 0">
-        <h4>📦 我扔出的瓶子 ({{ myBottles.length }})</h4>
-        <div class="history-list">
-          <div v-for="b in myBottles.slice(0,3)" :key="b.id" class="history-item">
-            <span>{{ b.message.slice(0,20) }}...</span>
-            <span class="history-status">{{ b.picked ? '已被拾起' : '漂流中' }}</span>
-          </div>
+<!-- 我扔出的瓶子（新版） -->
+<div class="bottle-history" v-if="myBottles.length > 0">
+  <h4>📦 我扔出的瓶子 · 回应</h4>
+  <div class="history-list">
+    <div v-for="b in myBottles" :key="b.id" class="bottle-history-card">
+      <!-- 瓶子内容 -->
+      <div class="bottle-card-body">
+        <div class="bottle-card-content">{{ b.message }}</div>
+       <div class="bottle-card-meta">
+  <span class="bottle-status">{{ b.picked ? '已被拾起' : '漂流中' }}</span>
+  <span class="bottle-time">{{ formatRelativeTime(b.time) }}</span>
+</div>
+      </div>
+      
+      <!-- 收到的回应（如果有） -->
+      <div v-if="b.comments && b.comments.length > 0" class="bottle-responses">
+        <div class="response-label">💬 {{ b.comments.length }} 条回应</div>
+        <div v-for="(c, idx) in b.comments" :key="idx" class="response-item">
+          <span class="response-user">{{ c.username || '匿名' }}</span>
+          <span class="response-text">{{ c.text }}</span>
+          <span class="response-time">{{ formatRelativeTime(c.time) }}</span>
         </div>
       </div>
+      <div v-else class="no-response">🤫 暂时没有回应</div>
+    </div>
+  </div>
+</div>
     </div>
   </div>
   
@@ -919,8 +937,13 @@
     </div>
   </div>
 </div>
+<footer class="icp-footer">
+  <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">湘ICP备2026015923号</a>
+</footer>
     </transition>
   </div>
+
   <script src="emotion.js"></script>
 </body>
+
 </html>
