@@ -96,26 +96,18 @@
     </div>
     
     <!-- 展开内容模式 -->
-    <div v-else class="book-pages" @click.stop>
-      <div class="archive-top">
-        <h3 class="page-title">往日回音</h3>
-        <button class="archive-close-x" @click.stop="isArchiveOpen = false">✕</button>
-      </div>
+    <div v-else class="book-pages" @click.stop> <!-- stop 阻止点击内容关闭弹窗 -->
+      <h3 class="page-title">往日回音</h3>
       <div class="history-scroll">
-        <div v-for="(log, idx) in moodRecords" :key="idx"
-          class="history-card" :class="{ 'hc-expanded': expandedMood.has(idx) }"
-          @click.stop="toggleMoodExpand(idx)">
+        <div v-for="(log, idx) in moodRecords" :key="idx" class="history-card">
           <div class="history-meta">
             <span class="history-time">{{ new Date(log.time).toLocaleDateString() }}</span>
-            <span class="history-emoji">{{ log.emoji }}</span>
-            <button class="hc-del-btn" @click.stop="delMood(idx)" title="删除">🗑</button>
+            <span>{{ log.emoji }}</span>
           </div>
-          <p class="history-text" :class="{ 'hc-full': expandedMood.has(idx) }">{{ log.text }}</p>
-          <span v-if="!expandedMood.has(idx) && log.text && log.text.length > 40" class="hc-hint">展开全文 ▼</span>
-          <span v-if="expandedMood.has(idx)" class="hc-hint">收起 ▲</span>
+          <p class="history-text">{{ log.text }}</p>
         </div>
-        <div v-if="!moodRecords.length" class="hc-empty">还没有记录，去写一条吧 ✨</div>
       </div>
+      <button class="close-btn" @click="isArchiveOpen = false">收起档案</button>
     </div>
   </div>
 </div>
@@ -150,7 +142,7 @@
             <span>🧩 我的情绪模式</span>
             <button @click="emotionPattern=''" class="pattern-close">×</button>
           </div>
-          <p>{{ emotionPattern }}</p>
+          <div class="pattern-body" v-html="renderedPattern"></div>
         </div>
       </transition>
 
@@ -434,65 +426,24 @@
       </div>
       
   <div class="confessions-list" v-if="(publicConfessions || []).length > 0">
-  <div
-    v-for="(confession, index) in (publicConfessions || []).filter(Boolean)"
-    :key="confession.id || index"
-    class="confession-card"
-    @click="openConfessionDetail(confession)"
-  >
-    <div class="card-header">
-      <span class="card-emoji">{{ confession.emoji || '💭' }}</span>
-      <span class="card-time">{{ formatRelativeTime(confession.time) }}</span>
+    <div
+      v-for="(confession, index) in (publicConfessions || []).filter(Boolean)"
+      :key="confession.id || index"
+      class="conf-card"
+      @click="openConfessionDetail(confession)"
+    >
+      <div class="conf-card-avatar" :class="{ anon: !confession.user_username }">
+        <img v-if="confession.user_img && confession.user_img.startsWith('data:')" :src="confession.user_img" />
+        <span v-else-if="confession.user_username">{{ confession.user_username.charAt(0).toUpperCase() }}</span>
+        <span v-else>🌙</span>
+      </div>
+      <div class="conf-card-body">
+        <div class="conf-card-name" :style="{ color: confession.user_username ? '#c4b5fd' : 'rgba(200,180,255,0.4)' }">{{ confession.user_username || '匿名' }}</div>
+        <div class="conf-card-text">{{ confession.message.length > 80 ? confession.message.substring(0,80)+'...' : confession.message }}</div>
+        <div class="conf-card-time">{{ formatRelativeTime(confession.time) }}</div>
+      </div>
     </div>
-
-    <div class="card-content">
-      {{ confession.message.length > 60
-          ? confession.message.substring(0, 60) + '...'
-          : confession.message }}
-    </div>
-
-    <div class="card-footer-actions">
-      <button @click.stop="likeConfession(confession)" class="action-btn like-btn">
-        ❤️ {{ confession.likes || 0 }}
-      </button>
-      <button @click.stop="openInlineComment(confession)" class="action-btn comment-btn">
-        💬 {{ getCommentCount(confession && confession.comments) }}
-      </button>
-    </div>
-
-    <div v-if="activeCommentId === confession.id" class="inline-comment-box" @click.stop>
-      <input
-        v-model="newCommentText"
-        placeholder="写一条温暖的评论..."
-        @keyup.enter="submitInlineComment(confession)"
-      >
-      <button @click="submitInlineComment(confession)">发送</button>
-    </div>
-
-   <div
-  class="comment-preview"
-  v-if="Array.isArray(confession && confession.comments) &&
-         confession.comments.length"
->
-  <div
-    v-for="c in (confession.comments || []).slice(0, 2)"
-    :key="c.time"
-    class="comment-item"
-  >
-    <strong>{{ c.username || '匿名行者' }}:</strong> {{ c.text }}
   </div>
-  <span
-    v-if="(confession.comments || []).length > 2"
-    class="more-comments"
-    @click.stop="openConfessionDetail(confession)"
-  >
-    查看全部 {{ (confession.comments || []).length }} 条评论 →
-  </span>
-</div>
-
-
-  </div>
-</div>
 
       
       <div v-else class="empty-state">
@@ -777,9 +728,9 @@
       <!-- 用户信息头部 -->
       <div class="profile-header">
         <div class="avatar">
-          <img v-if="currentUser.img && (currentUser.img.startsWith('data:') || currentUser.img.startsWith('http'))"
-               :src="currentUser.img" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
-          <span v-else>{{ currentUser.username ? currentUser.username.charAt(0).toUpperCase() : '👤' }}</span>
+          <img v-if="currentUser.avatar && (currentUser.avatar.startsWith('data:') || currentUser.avatar.startsWith('http'))"
+               :src="currentUser.avatar" />
+          <span v-else>{{ currentUser.avatar || '👤' }}</span>
         </div>
         <div class="info">
           <h1>{{ currentUser.username }}</h1>
@@ -839,10 +790,9 @@
                             <span class="q-idx">{{ index + 1 }}</span>
                             <span class="q-text">{{ q.text }}</span>
                         </div>
-                        <div class="q-btns-v2">
-                            <button @click="q.score = 2" :class="['q-btn', { active: q.score === 2 }]">完全符合</button>
-                            <button @click="q.score = 1" :class="['q-btn', { active: q.score === 1 }]">有时如此</button>
-                            <button @click="q.score = 0" :class="['q-btn', { active: q.score === 0 }]">完全不符</button>
+                        <div class="q-btns">
+                            <button @click="q.score = 1" :class="['tag-btn', { active: q.score === 1 }]">符合</button>
+                            <button @click="q.score = 0" :class="['tag-btn', { active: q.score === 0 }]">不符</button>
                         </div>
                     </div>
                 </div>

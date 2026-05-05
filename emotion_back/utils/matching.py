@@ -96,12 +96,13 @@ def calculate_80_scores(answers_list):
 # =========================
 
 def big5_similarity(s1, s2):
+    # 调整后的权重：O 提高（聊得来）, E 降低（文字影响小）, N 提高（情绪共鸣最重要）
     weights = {
-        "O": 0.12,
-        "C": 0.18,
-        "E": 0.15,
-        "A": 0.28,
-        "N": 0.27,
+        "O": 0.18,
+        "C": 0.15,
+        "E": 0.12,
+        "A": 0.22,
+        "N": 0.33,
     }
 
     keys = ["O", "C", "E", "A", "N"]
@@ -109,14 +110,15 @@ def big5_similarity(s1, s2):
     score = 0.0
 
     for i, k in enumerate(keys):
-        x = normalize(s1[i])
-        y = normalize(s2[i])
+        # 归一化到 0~1 范围再计算相似度，避免 normalize(-1~1) 传入 sim_linear 导致截断
+        x = s1[i] / 100.0
+        y = s2[i] / 100.0
 
         if k == "N":
             similarity = sim_linear(x, y)
             avg = (s1[i] + s2[i]) / 2
+            # N 分数都低时额外加分（双方情绪都稳定，更契合）
             low_bonus = max(0.0, (50 - avg) / 50)
-
             sim = similarity * 0.7 + low_bonus * 0.3
         else:
             sim = sim_linear(x, y)
@@ -133,25 +135,34 @@ def big5_similarity(s1, s2):
 def attachment_score(a1, a2):
     base_matrix = {
         ("安全型", "安全型"): 95,
-        ("安全型", "焦虑型"): 85,
+        ("安全型", "焦虑型"): 82,   # 安全型对焦虑型有疗愈作用
         ("安全型", "回避型"): 75,
         ("安全型", "恐惧型"): 65,
-        ("焦虑型", "焦虑型"): 60,
-        ("焦虑型", "回避型"): 35,
-        ("焦虑型", "恐惧型"): 50,
-        ("回避型", "回避型"): 55,
-        ("回避型", "恐惧型"): 45,
-        ("恐惧型", "恐惧型"): 30,
+        ("焦虑型", "焦虑型"): 58,   # 双焦虑容易相互强化不安
+        ("焦虑型", "回避型"): 32,   # 追逐-逃离动态，最差配对
+        ("焦虑型", "恐惧型"): 48,
+        ("回避型", "回避型"): 55,   # 双方都不深入，关系表浅但稳定
+        ("回避型", "恐惧型"): 42,
+        ("恐惧型", "恐惧型"): 28,   # 双方都不稳定，容易崩溃
     }
 
-    base = base_matrix.get((a1, a2)) or base_matrix.get((a2, a1)) or 60
+    base = base_matrix.get((a1, a2)) or base_matrix.get((a2, a1)) or 58
 
     bonus = 0
-    if "安全型" in (a1, a2):
-        bonus += 5
 
-    if a1 == a2 and a1 != "安全型":
-        bonus -= 5
+    # 安全型参与时加分（稳定锚点效应）
+    if "安全型" in (a1, a2):
+        if {a1, a2} == {"安全型", "焦虑型"}:
+            bonus += 10  # 焦虑+安全是疗愈型配对，额外奖励
+        else:
+            bonus += 5
+
+    # 同类型相遇：安全型是正向的，其他是负向的
+    if a1 == a2:
+        if a1 == "安全型":
+            bonus += 3
+        else:
+            bonus -= 5
 
     return max(0, min(100, base + bonus))
 
