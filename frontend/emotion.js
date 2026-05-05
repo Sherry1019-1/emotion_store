@@ -235,9 +235,11 @@ createApp({
             publicConfessions: [],
             showConfessionDetail: false,
             currentDetail: null,
-            // 只保留一�?newCommentText，避免重复声�?
+            // 只保留一份 newCommentText，避免重复声明
             newCommentText: '',
             expandedTH: new Set(),
+            expandedComments: new Set(),
+            expandedComments: new Set(),
             
             // 漂流瓶相关数�?
             bottleMessage: '',
@@ -308,43 +310,195 @@ createApp({
     "🤬","🤡","💩","💘","💔","😘"
 ],
 attachmentQuestions: [
-  // 🟢 安全型（7题）
-  { text: "我在亲密关系中通常感到安心", type: "安全型", score: null },
-  { text: "我相信对方是稳定可靠的", type: "安全型", score: null },
-  { text: "我既能依赖别人，也能保持自我", type: "安全型", score: null },
-  { text: "我能自然表达自己的情绪", type: "安全型", score: null },
-  { text: "关系出现问题时，我愿意沟通解决", type: "安全型", score: null },
-  { text: "我不太担心被抛弃", type: "安全型", score: null },
-  { text: "即使短暂分开，我也能保持稳定情绪", type: "安全型", score: null },
 
-  // 🔴 焦虑型（8题）
-  { text: "我常担心对方不够爱我", type: "焦虑型", score: null },
-  { text: "对方回复慢会让我焦虑", type: "焦虑型", score: null },
-  { text: "我需要频繁确认关系是否稳定", type: "焦虑型", score: null },
-  { text: "我很在意对方对我的态度变化", type: "焦虑型", score: null },
-  { text: "我容易在关系中投入过多情绪", type: "焦虑型", score: null },
-  { text: "我害怕被忽视或被替代", type: "焦虑型", score: null },
-  { text: "我会反复猜测对方的想法", type: "焦虑型", score: null },
-  { text: "当对方冷淡时，我会很难受", type: "焦虑型", score: null },
+  // ── 安全型 8题 ──
+  {
+    text: "朋友突然两天没回你消息，你的第一反应是？",
+    type: "安全型",
+    score: null,
+    options: ["ta可能最近很忙，等ta有空会回的", "有点担心但不会一直想，继续做自己的事", "开始怀疑是不是自己说了什么不对的话"]
+  },
+  {
+    text: "和亲密的人发生争吵后，你通常会？",
+    type: "安全型",
+    score: null,
+    options: ["冷静后主动找对方沟通，把问题说清楚", "等情绪平复再慢慢聊，不急于一时", "反复回想争吵细节，担心关系就此破裂"]
+  },
+  {
+    text: "当你需要帮助时，你会？",
+    type: "安全型",
+    score: null,
+    options: ["自然地告诉身边人，知道他们愿意帮我", "会说，但会先考虑会不会打扰对方", "宁愿自己扛，不想让别人觉得我脆弱"]
+  },
+  {
+    text: "对方表达对你的喜欢和重视时，你的感受是？",
+    type: "安全型",
+    score: null,
+    options: ["温暖且踏实，自然地接受", "开心，但有点不习惯，不知道怎么回应", "会想太多，怀疑对方是不是真的这么想"]
+  },
+  {
+    text: "在关系中，你觉得自己是一个怎样的人？",
+    type: "安全型",
+    score: null,
+    options: ["有安全感的，相信关系是稳固的", "有时稳定有时焦虑，情绪起伏比较大", "习惯保持距离，不太愿意完全敞开"]
+  },
+  {
+    text: "当一段重要关系出现问题，你的第一步是？",
+    type: "安全型",
+    score: null,
+    options: ["想清楚自己的感受，然后坦诚地和对方谈", "先观察对方态度，再决定要不要开口", "倾向于沉默处理，或者直接拉开距离"]
+  },
+  {
+    text: "分开一段时间后再见面，你通常会？",
+    type: "安全型",
+    score: null,
+    options: ["很自然，好像没断开过，继续聊以前的话题", "有点紧张，想确认关系有没有变化", "感到些许陌生，需要一点时间才能放松"]
+  },
+  {
+    text: "你对亲密关系的总体感受是？",
+    type: "安全型",
+    score: null,
+    options: ["是让我感到舒适和有力量的事", "很重要，但也常常让我感到疲惫或不安", "有点复杂，我说不清楚自己到底想要什么"]
+  },
 
-  // 🔵 回避型（8题）
-  { text: "我不太喜欢依赖别人", type: "回避型", score: null },
-  { text: "亲密关系让我有压力", type: "回避型", score: null },
-  { text: "我更习惯独自处理问题", type: "回避型", score: null },
-  { text: "我不喜欢别人过多了解我", type: "回避型", score: null },
-  { text: "我会刻意保持情感距离", type: "回避型", score: null },
-  { text: "我不太愿意表达脆弱", type: "回避型", score: null },
-  { text: "当别人靠近时，我会后退", type: "回避型", score: null },
-  { text: "我觉得依赖别人是不必要的", type: "回避型", score: null },
+  // ── 焦虑型 8题 ──
+  {
+    text: "对方比平时冷淡了一点，你会怎么想？",
+    type: "焦虑型",
+    score: null,
+    options: ["ta今天可能有点累，不是针对我", "有点担心，会想是不是自己做错了什么", "非常不安，脑子里开始演很多可能的原因"]
+  },
+  {
+    text: "发出一条消息后，对方迟迟没回，你会？",
+    type: "焦虑型",
+    score: null,
+    options: ["继续做自己的事，想到了再看", "时不时看一眼手机，有点小焦虑", "很难专注别的事，反复查看有没有回复"]
+  },
+  {
+    text: "在关系中，你有多需要对方的确认和回应？",
+    type: "焦虑型",
+    score: null,
+    options: ["不太需要，对关系本身有信心", "适量需要，偶尔需要被肯定", "很需要，缺少回应会让我很不安"]
+  },
+  {
+    text: "你有多担心对方会离开或不再喜欢你？",
+    type: "焦虑型",
+    score: null,
+    options: ["几乎不担心，相信关系是稳固的", "偶尔会想到，但不会特别困扰", "经常这样想，对这件事很敏感"]
+  },
+  {
+    text: "当对方优先处理其他事情而不是你时，你通常感到？",
+    type: "焦虑型",
+    score: null,
+    options: ["理解，每个人都有自己的事", "有点失落，但能接受", "难受，会觉得自己不够重要"]
+  },
+  {
+    text: "关系稳定之后，你会？",
+    type: "焦虑型",
+    score: null,
+    options: ["放松下来，享受这份稳定", "还是会时不时确认一下关系状态", "反而更担心，怕稳定只是暂时的"]
+  },
+  {
+    text: "你付出比对方多时，通常感到？",
+    type: "焦虑型",
+    score: null,
+    options: ["没关系，付出是我自愿的", "会在意，但不一定说出来", "很委屈，会反复想为什么不平等"]
+  },
+  {
+    text: "如果对方开始变得不那么主动联系你，你会？",
+    type: "焦虑型",
+    score: null,
+    options: ["不太在意，联系频率本来就会变化", "会主动发消息，但不会想太多", "很在意，会主动找ta，想搞清楚发生了什么"]
+  },
 
-  // 🟣 恐惧型（7题）
-  { text: "我既渴望亲密，又害怕亲密", type: "恐惧型", score: null },
-  { text: "我对关系常常感到矛盾", type: "恐惧型", score: null },
-  { text: "我有时很依赖，有时又想逃离", type: "恐惧型", score: null },
-  { text: "我不确定别人是否值得信任", type: "恐惧型", score: null },
-  { text: "当关系变近时，我反而会不安", type: "恐惧型", score: null },
-  { text: "我容易在关系中情绪失控", type: "恐惧型", score: null },
-  { text: "我觉得亲密关系既重要又危险", type: "恐惧型", score: null }
+  // ── 回避型 8题 ──
+  {
+    text: "当关系变得越来越亲密时，你通常会感到？",
+    type: "回避型",
+    score: null,
+    options: ["温暖，很享受这种靠近", "有点不自在，但还好", "有些压力，想要一点自己的空间"]
+  },
+  {
+    text: "向别人倾诉内心感受，对你来说？",
+    type: "回避型",
+    score: null,
+    options: ["很自然，说出来反而轻松", "可以，但需要很信任的人", "很难，不太习惯暴露内心"]
+  },
+  {
+    text: "对方对你表达强烈的依赖，你会？",
+    type: "回避型",
+    score: null,
+    options: ["感到被需要，很好", "有点受宠若惊，但还能接受", "感到压力，想拉开一些距离"]
+  },
+  {
+    text: "遇到情绪低落时，你倾向于？",
+    type: "回避型",
+    score: null,
+    options: ["联系亲近的人，聊一聊", "自己消化，但不完全排斥别人帮助", "独处，不想让别人知道我的状态"]
+  },
+  {
+    text: "你觉得'需要别人'这件事，是？",
+    type: "回避型",
+    score: null,
+    options: ["很正常，人本来就需要连接", "可以接受，但最好不要太依赖", "有点不自在，更喜欢独立处理"]
+  },
+  {
+    text: "当对方想更了解你时，你通常会？",
+    type: "回避型",
+    score: null,
+    options: ["开放地分享自己", "分享一部分，保留一部分", "有些抗拒，不确定自己愿不愿意"]
+  },
+  {
+    text: "独处对你来说是？",
+    type: "回避型",
+    score: null,
+    options: ["享受，但也喜欢和人在一起", "必要的充电时间", "最舒服的状态，胜过大多数社交"]
+  },
+  {
+    text: "在关系中主动表达喜欢或在乎，对你来说？",
+    type: "回避型",
+    score: null,
+    options: ["很自然，喜欢就会说出来", "有点难，但会用行动代替语言", "很难，说出口会让我感到暴露"]
+  },
+
+  // ── 恐惧型 6题 ──
+  {
+    text: "想象一段很亲密的关系，你的第一反应是？",
+    type: "恐惧型",
+    score: null,
+    options: ["向往，这是我想要的", "既想要，又有点害怕", "有些不安，不知道能不能承受"]
+  },
+  {
+    text: "当一段关系变得认真，你会？",
+    type: "恐惧型",
+    score: null,
+    options: ["感到踏实，很好", "一方面开心，一方面有隐约的焦虑", "开始怀疑这段关系是否真的安全"]
+  },
+  {
+    text: "你对亲密关系最大的恐惧是？",
+    type: "恐惧型",
+    score: null,
+    options: ["没什么特别的恐惧", "怕关系不稳定，怕被忽视", "怕被彻底了解之后，对方选择离开"]
+  },
+  {
+    text: "你在关系中的模式更接近？",
+    type: "恐惧型",
+    score: null,
+    options: ["稳定投入，有问题就一起解决", "时而很投入，时而需要撤退", "靠近之后反而想逃，说不清楚为什么"]
+  },
+  {
+    text: "过去的情感经历对你现在的影响是？",
+    type: "恐惧型",
+    score: null,
+    options: ["帮我更了解自己想要什么", "会有一些影响，但整体还好", "让我很难真正信任别人或放开自己"]
+  },
+  {
+    text: "如果让你完全袒露自己，你会？",
+    type: "恐惧型",
+    score: null,
+    options: ["可以，对信任的人愿意这样做", "可以一部分，但不是全部", "很害怕，担心被看透之后失去对方"]
+  }
+
 ],
 
 attachmentResult: "", // 存放最终结果
@@ -504,11 +658,25 @@ openConfessionDetail(item) {
     
     // 创建一个副本，防止修改原始列表
     this.selectedConfession = { ...item, comments: safeComments };
+    this.expandedComments = new Set();
     this.showDetailModal = true;
 },
     closeDetailModal() {
         this.showDetailModal = false;
         this.selectedConfession = null;
+        this.expandedComments = new Set();
+    },
+    isCommentExpanded(comment, idx) {
+        const key = comment.id || comment.time || idx;
+        return this.expandedComments.has(key);
+    },
+    toggleCommentExpand(comment, idx) {
+        const key = comment.id || comment.time || idx;
+        if (this.expandedComments.has(key)) {
+            this.expandedComments.delete(key);
+        } else {
+            this.expandedComments.add(key);
+        }
     },
 async toggleLike(item) {
     try {
@@ -1026,24 +1194,20 @@ openInlineComment(confession) {
         // 本地提交捡到瓶子的留言（若需要持久化可以改为调用后端 API�?
 async submitPickedBottleComment() {
     const id = this.pickedBottle?.id;
-    const text = this.commentInputs[id];
+    const text = this.newCommentText?.trim();
 
-    if (!text?.trim()) return alert("写点什么吧");
+    if (!text) return alert("写点什么吧");
 
     try {
-        const res = await apiCall(`/bottles/${id}/comment`, 'post', {
-            text
-        });
+        const res = await apiCall(`/bottles/${id}/comment`, 'post', { text });
 
         if (!this.pickedBottle.comments) {
             this.pickedBottle.comments = [];
         }
 
-        // ⭐ 优先用后端返回
         if (res.comment) {
             this.pickedBottle.comments.push(res.comment);
         } else {
-            // fallback
             this.pickedBottle.comments.push({
                 username: this.currentUser?.username || "匿名",
                 text,
@@ -1051,11 +1215,10 @@ async submitPickedBottleComment() {
             });
         }
 
-        this.commentInputs[id] = '';
-        this.showPickedCommentBox = false;
+        this.newCommentText = '';
 
     } catch (e) {
-        alert(e.response?.data?.detail || "发送失败");
+        alert(typeof e.response?.data?.detail === "string" ? e.response.data.detail : "发送失败");
     }
 },
 
@@ -1244,6 +1407,11 @@ togglePickedComment() {
        
         // ===== 用户系统 =====
         openLogin() { this.showLoginModal = true; this.showRegisterModal = false; },
+        toggleExpandComment(ci) {
+            const s = new Set(this.expandedComments);
+            s.has(ci) ? s.delete(ci) : s.add(ci);
+            this.expandedComments = s;
+        },
         toggleMoodExpand(idx) {
             const s = new Set(this.expandedMood);
             s.has(idx) ? s.delete(idx) : s.add(idx);

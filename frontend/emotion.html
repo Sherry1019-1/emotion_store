@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css?family=Pacifico&display=swap" rel="stylesheet">
-  <link rel="stylesheet" type="text/css" href="/emotion.css">
+   <link href="/bodymap.html" rel="canonical">
+  <link rel="stylesheet" type="text/css" href="emotion.css">
 <script src="https://unpkg.com/vue@3.5.25/dist/vue.global.prod.js"></script>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-
   <link rel="icon" href="logo.jpg" >
 </head>
 <body>
@@ -23,6 +23,7 @@
         <li><span @click="page='ai'">小伴AI</span></li>
         <li><span @click="page='sun'">心晴指南</span></li>
         <li><span @click="page='treehole'">树洞</span></li>
+        <li><a href="bodymap.html" style="color:inherit;text-decoration:none;padding:6px 18px;border-radius:48px;font-size:20px;display:block;">身体地图</a></li>
         <li><span @click="page='profile'">我的空间</span></li>
       </ul>
     </nav>
@@ -52,7 +53,13 @@
       {{ typeof text === 'object' ? text.content : text }}
     </span>
   </div>
-  <div class="thought-row" style="animation-duration: 28s; animation-delay: 3s; animation-direction: reverse;">
+  
+  <div class="thought-row" 
+  :style="{ 
+  animationDelay: `${rowIdx * 3}s`, 
+  animationDuration: `${180 + rowIdx * 20}s`  
+}";
+     animation-direction: reverse;>
     <span v-for="(text, i) in (treeholeList || [])" :key="'r'+i" class="thought-item">
       {{ typeof text === 'object' ? text.content : text }}
     </span>
@@ -86,53 +93,51 @@
     </div>
   </div>
 
- <!-- 档案本部分 -->
-<div :class="['history-book-wrapper', { 'is-open': isArchiveOpen }]" @click="isArchiveOpen = !isArchiveOpen">
-  <div class="magic-book">
-    <!-- 封面模式 -->
-    <div v-if="!isArchiveOpen" class="book-cover">
-      <div class="cover-title">情绪档案</div>
-      <div class="cover-hint">点击翻阅</div>
-    </div>
-    
-    <!-- 展开内容模式 -->
-    <div v-else class="book-pages" @click.stop> <!-- stop 阻止点击内容关闭弹窗 -->
-      <h3 class="page-title">往日回音</h3>
-      <div class="history-scroll">
-        <div v-for="(log, idx) in moodRecords" :key="idx" class="history-card">
-          <div class="history-meta">
-            <span class="history-time">{{ new Date(log.time).toLocaleDateString() }}</span>
-            <span>{{ log.emoji }}</span>
+  <div :class="['history-book-wrapper', { 'is-open': isArchiveOpen }]">
+    <div class="magic-book">
+      <div class="book-cover" @click="isArchiveOpen = !isArchiveOpen" style="cursor:pointer;">
+        <div class="cover-title">情绪<br>档案</div>
+        <div class="cover-hint">{{ isArchiveOpen ? '点击收起' : '点击翻阅' }}</div>
+      </div>
+      <div class="book-pages" @click.stop>
+        <div class="archive-top">
+          <h3 class="page-title">往日回音</h3>
+          <button class="archive-close-x" @click.stop="isArchiveOpen = false">✕</button>
+        </div>
+        <div class="history-scroll">
+          <div v-for="(log, idx) in moodRecords" :key="idx"
+            class="history-card" :class="{ 'hc-expanded': expandedMood.has(idx) }"
+            @click.stop="toggleMoodExpand(idx)">
+            <div class="history-meta">
+              <span class="history-time">{{ new Date(log.time).toLocaleDateString() }}</span>
+              <span class="history-emoji">{{ log.emoji }}</span>
+              <button class="hc-del-btn" @click.stop="delMood(idx)" title="删除">🗑</button>
+            </div>
+            <p class="history-text" :class="{ 'hc-full': expandedMood.has(idx) }">{{ log.text }}</p>
+            <span v-if="!expandedMood.has(idx) && log.text && log.text.length > 40" class="hc-hint">展开全文 ▼</span>
+            <span v-if="expandedMood.has(idx)" class="hc-hint">收起 ▲</span>
           </div>
-          <p class="history-text">{{ log.text }}</p>
+          <div v-if="!moodRecords || moodRecords.length === 0" class="hc-empty">本子还是空的，快去写下第一篇吧...</div>
         </div>
       </div>
-      <button class="close-btn" @click="isArchiveOpen = false">收起档案</button>
     </div>
   </div>
-</div>
 
 </div>
           
 <!-- 小伴AI -->
-        <div v-if="page==='ai'" key="ai" class="ai-page">
-  <div class="ai-layout">
+<div v-if="page==='ai'" key="ai" class="ai-page">
+  <div class="ai-layout-v2">
 
-    <!-- 左侧：功能面板 -->
-    <div class="ai-sidebar">
-      <div class="ai-sidebar-title">🧠 小伴工具箱</div>
+    <!-- 左侧：工具箱 + 情绪模式 -->
+    <div class="ai-left-panel">
+      <div class="ai-left-title">🧠 小伴工具箱</div>
 
-      <!-- 生成情绪模式按钮 -->
-      <button
-        @click="generateEmotionPattern"
-        :disabled="aiTyping"
-        :class="['ai-sidebar-btn', 'btn-pattern', { loading: aiTyping }]">
-        <span class="sidebar-btn-icon">🧩</span>
-        <span class="sidebar-btn-text">
-          <strong>生成情绪模式</strong>
-          <small>AI分析你的情绪规律</small>
-        </span>
-        <span v-if="aiTyping" class="sidebar-btn-spin">⟳</span>
+      <button @click="generateEmotionPattern"
+        :class="['ai-gen-btn', { loading: aiTyping }]"
+        :disabled="aiTyping">
+        <span v-if="!aiTyping">🧩 生成我的情绪模式</span>
+        <span v-else>✨ 分析中...</span>
       </button>
 
       <!-- 情绪模式结果 -->
@@ -145,39 +150,26 @@
           <div class="pattern-body" v-html="renderedPattern"></div>
         </div>
       </transition>
-
-      <!-- 快捷提示 -->
-      <div class="ai-quick-tips">
-        <div class="quick-tip-label">💡 试试问小伴</div>
-        <button class="quick-tip-item" @click="aiInput='我今天心情很低落，不知道该怎么办'">今天情绪低落...</button>
-        <button class="quick-tip-item" @click="aiInput='最近总是睡不好，很焦虑'">最近睡眠很差...</button>
-        <button class="quick-tip-item" @click="aiInput='我感觉压力很大，帮我放松一下'">压力好大...</button>
-      </div>
     </div>
 
-    <!-- 右侧：聊天区 -->
-    <div class="ai-chat-panel">
-      <div class="ai-chat-header">
-        <h2>🤖 小伴AI · 你的情绪伙伴</h2>
-        <span v-if="aiTyping" class="typing-indicator">小伴正在思考<span class="dots">...</span></span>
+    <!-- 右侧：聊天 -->
+    <div class="ai-right-panel">
+      <div class="ai-chat-header-v2">
+        <span>🤖 小伴AI · 你的情绪伙伴</span>
+        <span v-if="aiTyping" class="typing-indicator">思考中<span class="dots">...</span></span>
       </div>
 
       <div class="chat-area" ref="chatWindow">
         <div v-for="(msg, idx) in aiMessages" :key="idx"
-             class="message" :class="msg.role">
+          class="message" :class="msg.role">
           {{ msg.text }}
-        </div>
-        <div v-if="aiTyping" class="message assistant typing-bubble">
-          <span class="dot-flash">●</span><span class="dot-flash">●</span><span class="dot-flash">●</span>
         </div>
       </div>
 
       <div class="input-area">
-        <input v-model="aiInput"
-               @keyup.enter="sendAiMessage"
-               placeholder="跟小伴说点什么吧..."
-               :disabled="aiTyping" />
-        <button @click="sendAiMessage" :disabled="aiTyping">发送</button>
+        <input v-model="aiInput" @keyup.enter="sendAiMessage"
+          placeholder="跟小伴说点什么吧..." />
+        <button @click="sendAiMessage">发送</button>
       </div>
     </div>
 
@@ -426,26 +418,20 @@
       </div>
       
   <div class="confessions-list" v-if="(publicConfessions || []).length > 0">
-    <div
-      v-for="(confession, index) in (publicConfessions || []).filter(Boolean)"
-      :key="confession.id || index"
-      class="conf-card"
-      @click="openConfessionDetail(confession)"
-    >
+    <div v-for="(confession, index) in (publicConfessions || []).filter(Boolean)" :key="confession.id || index"
+      class="conf-card" @click="openConfessionDetail(confession)">
       <div class="conf-card-avatar" :class="{ anon: !confession.user_username }">
         <img v-if="confession.user_img && confession.user_img.startsWith('data:')" :src="confession.user_img" />
         <span v-else-if="confession.user_username">{{ confession.user_username.charAt(0).toUpperCase() }}</span>
         <span v-else>🌙</span>
       </div>
       <div class="conf-card-body">
-        <div class="conf-card-name" :style="{ color: confession.user_username ? '#c4b5fd' : 'rgba(200,180,255,0.4)' }">{{ confession.user_username || '匿名' }}</div>
-        <div class="conf-card-text">{{ confession.message.length > 80 ? confession.message.substring(0,80)+'...' : confession.message }}</div>
-        <div class="conf-card-time">{{ formatRelativeTime(confession.time) }}</div>
+        <div class="conf-card-name">{{ confession.user_username || '匿名' }}</div>
+        <div class="conf-card-text">{{ confession.message.length > 60 ? confession.message.substring(0,60) + '...' : confession.message }}</div>
       </div>
     </div>
   </div>
 
-      
       <div v-else class="empty-state">
         <div class="empty-icon">🌙</div>
         <p>还没有公开的心事</p>
@@ -460,35 +446,26 @@
     <div v-if="showDetailModal && selectedConfession" class="conf-modal-overlay" @click.self="closeDetailModal">
       <div class="conf-modal-box">
         <button class="conf-modal-close" @click="closeDetailModal">×</button>
-
-        <!-- 作者 -->
         <div class="conf-modal-author">
           <div class="conf-modal-avatar conf-modal-avatar-letter">
-            {{ selectedConfession.user_username ? selectedConfession.user_username.charAt(0).toUpperCase() : (selectedConfession.username ? selectedConfession.username.charAt(0).toUpperCase() : '?') }}
+            {{ selectedConfession.user_username ? selectedConfession.user_username.charAt(0).toUpperCase() : '?' }}
           </div>
           <div class="conf-modal-author-info">
-            <span class="conf-modal-username">{{ selectedConfession.user_username || selectedConfession.username || '匿名' }}</span>
+            <span class="conf-modal-username">{{ selectedConfession.user_username || '匿名' }}</span>
             <span class="conf-modal-time">{{ formatRelativeTime(selectedConfession.time) }}</span>
           </div>
         </div>
-
-        <!-- 内容 -->
         <div class="conf-modal-content">{{ selectedConfession.message }}</div>
-
-        <!-- 点赞 -->
         <div class="conf-modal-actions">
           <button @click.stop="likeConfession(selectedConfession)" class="conf-modal-like">
             <span>❤️</span><span>{{ selectedConfession.likes || 0 }}</span>
           </button>
           <span class="conf-modal-comment-count">💬 {{ getCommentCount(selectedConfession.comments) }} 条留言</span>
         </div>
-
         <div class="conf-modal-divider"></div>
-
-        <!-- 评论列表 -->
         <div class="conf-modal-comments">
           <div v-if="getCommentCount(selectedConfession.comments) === 0" class="conf-modal-empty">还没有留言，来说第一句话 ✨</div>
-          <template v-for="c in (Array.isArray(selectedConfession.comments) ? selectedConfession.comments : [])" :key="c.time">
+          <template v-for="(c, ci) in (Array.isArray(selectedConfession.comments) ? selectedConfession.comments : [])" :key="c.time || ci">
             <div class="conf-modal-comment-item" v-if="c && c.text">
               <div class="conf-modal-c-avatar">{{ c.username ? c.username.charAt(0).toUpperCase() : '?' }}</div>
               <div class="conf-modal-c-body">
@@ -496,13 +473,16 @@
                   <span class="conf-modal-c-name">{{ c.username || '匿名' }}</span>
                   <span class="conf-modal-c-time">{{ formatRelativeTime(c.time) }}</span>
                 </div>
-                <div class="conf-modal-c-text">{{ c.text }}</div>
+                <div class="conf-modal-c-text">
+                  {{ expandedComments.has(ci) || c.text.length <= 80 ? c.text : c.text.slice(0,80)+'...' }}
+                </div>
+                <button v-if="c.text.length > 80" class="conf-modal-c-expand" @click.stop="toggleExpandComment(ci)">
+                  {{ expandedComments.has(ci) ? '收起 ▲' : '展开全文 ▼' }}
+                </button>
               </div>
             </div>
           </template>
         </div>
-
-        <!-- 输入 -->
         <div class="conf-modal-input-area">
           <input v-model="newCommentText" placeholder="说点什么..." @keyup.enter="submitComment(selectedConfession)" class="conf-modal-input">
           <button @click="submitComment(selectedConfession)" class="conf-modal-send">发送</button>
@@ -585,81 +565,63 @@
         </button>
         
         <!-- 捡到的瓶子内容展示 -->
-        <div class="picked-bottle" v-if="pickedBottle">
-    <div class="picked-bottle-header">
-        <span class="bottle-emoji">🍾</span>
-        <span class="bottle-time">{{ formatRelativeTime(pickedBottle.time) }}</span>
-    </div>
-    <p class="picked-bottle-content">{{ pickedBottle.message }}</p>
-    <div class="card-footer-actions">
-        <button @click="likePickedBottle" class="action-btn like-btn">
-            ❤️ {{ pickedBottle.likes || 0 }}
-        </button>
-        <button @click="togglePickedComment" class="action-btn comment-btn">
-            💬 {{ getCommentCount(pickedBottle.comments) }}
-        </button>
-    </div>
-    <div v-if="showPickedCommentBox" class="inline-comment-box">
-        <input v-model="newCommentText" placeholder="给TA留言..." @keyup.enter="submitPickedBottleComment">
-        <button @click="submitPickedBottleComment">发送</button>
-    </div>
-  <div
-  class="comment-preview"
-  v-if="pickedBottle &&
-         Array.isArray(pickedBottle.comments) &&
-         pickedBottle.comments.length"
->
-  <div
-    v-for="c in (pickedBottle.comments || []).slice(0, 2)"
-    :key="c.time"
-    class="comment-item"
-  >
-    <strong>{{ c.username || '匿名行者' }}:</strong> {{ c.text }}
-  </div>
-  <span
-    v-if="(pickedBottle.comments || []).length > 2"
-    class="more-comments"
-    @click="openCommentModal"
-  >
-    查看全部 {{ (pickedBottle.comments || []).length }} 条留言 →
-  </span>
-</div>
+        <div class="picked-bottle-card" v-if="pickedBottle">
+          <!-- 顶部时间 -->
+          <div class="pb-card-top">
+            <span class="pb-card-badge">🌊 漂流瓶</span>
+            <span class="pb-card-time">{{ formatRelativeTime(pickedBottle.time) }}</span>
+          </div>
 
-</div>
-      </div>
-      
-<!-- 我扔出的瓶子（新版） -->
-<div class="bottle-history" v-if="myBottles.length > 0">
-  <h4>📦 我扔出的瓶子 · 回应</h4>
-  <div class="history-list">
-    <div v-for="b in myBottles" :key="b.id" class="bottle-history-card">
-      <!-- 瓶子内容 -->
-      <div class="bottle-card-body">
-        <div class="bottle-card-content">{{ b.message }}</div>
-       <div class="bottle-card-meta">
-  <span class="bottle-status">{{ b.picked ? '已被拾起' : '漂流中' }}</span>
-  <span class="bottle-time">{{ formatRelativeTime(b.time) }}</span>
-</div>
-      </div>
-      
-      <!-- 收到的回应（如果有） -->
-      <div v-if="getCommentCount(b.comments) > 0" class="bottle-responses">
-        <div class="response-label">💬 {{ getCommentCount(b.comments) }} 条回应</div>
-        <div v-for="(c, idx) in (typeof b.comments === 'string' ? JSON.parse(b.comments || '[]') : (b.comments || []))" :key="idx" class="response-item">
-          <div class="conf-modal-c-avatar" style="width:26px;height:26px;font-size:0.72rem;flex-shrink:0;">{{ c.username ? c.username.charAt(0).toUpperCase() : '?' }}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
-              <span class="response-user">{{ c.username || '匿名' }}</span>
-              <span class="response-time">{{ formatRelativeTime(c.time) }}</span>
-            </div>
-            <span class="response-text">{{ c.text }}</span>
+          <!-- 内容 -->
+          <div class="pb-card-content">{{ pickedBottle.message }}</div>
+
+          <!-- 操作栏 -->
+          <div class="pb-card-actions">
+            <button @click="likePickedBottle" class="pb-like-btn">
+              <span>❤️</span><span>{{ pickedBottle.likes || 0 }}</span>
+            </button>
+            <span class="pb-comment-count">💬 {{ getCommentCount(pickedBottle.comments) }} 条留言</span>
+            <button @click="closePickedBottle" class="pb-close-btn">丢回大海</button>
+          </div>
+
+          <!-- 分割线 -->
+          <div class="pb-divider"></div>
+
+          <!-- 评论列表 -->
+          <div class="pb-comments-list" v-if="getCommentCount(pickedBottle.comments) > 0">
+            <template v-for="(c, ci) in (typeof pickedBottle.comments === 'string' ? JSON.parse(pickedBottle.comments||'[]') : (pickedBottle.comments||[]))" :key="ci">
+              <div class="pb-comment-item" v-if="c && c.text">
+                <div class="pb-c-avatar">{{ c.username ? c.username.charAt(0).toUpperCase() : '?' }}</div>
+                <div class="pb-c-body">
+                  <div class="pb-c-meta">
+                    <span class="pb-c-name">{{ c.username || '匿名' }}</span>
+                    <span class="pb-c-time">{{ formatRelativeTime(c.time) }}</span>
+                  </div>
+                  <div class="pb-c-text">{{ c.text }}</div>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div v-else class="pb-no-comment">还没有人留言，来说第一句话吧 ✨</div>
+
+          <!-- 评论输入 -->
+          <div class="pb-comment-input-row">
+            <input v-model="newCommentText" placeholder="留下一句话..." @keyup.enter="submitPickedBottleComment" class="pb-comment-input">
+            <button @click="submitPickedBottleComment" class="pb-comment-send">发送</button>
           </div>
         </div>
       </div>
-      <div v-else class="no-response">🤫 暂时没有回应</div>
-    </div>
-  </div>
-</div>
+      
+      <!-- 历史瓶子 -->
+      <div class="bottle-history" v-if="myBottles.length > 0">
+        <h4>📦 我扔出的瓶子 ({{ myBottles.length }})</h4>
+        <div class="history-list">
+          <div v-for="b in myBottles.slice(0,3)" :key="b.id" class="history-item">
+            <span>{{ b.message.slice(0,20) }}...</span>
+            <span class="history-status">{{ b.picked ? '已被拾起' : '漂流中' }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -728,9 +690,9 @@
       <!-- 用户信息头部 -->
       <div class="profile-header">
         <div class="avatar">
-          <img v-if="currentUser.avatar && (currentUser.avatar.startsWith('data:') || currentUser.avatar.startsWith('http'))"
-               :src="currentUser.avatar" />
-          <span v-else>{{ currentUser.avatar || '👤' }}</span>
+          <img v-if="currentUser.img && (currentUser.img.startsWith('data:') || currentUser.img.startsWith('http'))"
+               :src="currentUser.img" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+          <span v-else>{{ currentUser.username ? currentUser.username.charAt(0).toUpperCase() : '👤' }}</span>
         </div>
         <div class="info">
           <h1>{{ currentUser.username }}</h1>
@@ -760,17 +722,126 @@
     </div>
     
     <div class="test-card glass-card">
-        <div class="card-title">
-            <span class="icon">📊</span>
-            <h3>1. 大五人格测试</h3>
-        </div>
-        <div class="card-content">
-            <p>请点击 <a href="bigfive.html" target="_blank" class="external-link">大五人格测试</a></p>
-            <div class="input-group">
-                <input v-model="bigFiveInput" placeholder="例：70h-65a-80m-40n-90F" class="custom-input">
-                <button @click="saveBigFive" class="btn-primary">保存数据</button>
+        <div class="card-header-toggle" @click="isBigFiveOpen = !isBigFiveOpen">
+            <div class="card-title">
+                <span class="icon">📊</span>
+                <h3>1. 大五人格测试</h3>
+                <span v-if="currentUser?.big_five && !isBigFiveOpen" class="bf-done-badge">✓ {{ currentUser.big_five }}</span>
             </div>
+            <span class="arrow-icon" :class="{ 'is-active': isBigFiveOpen }">▼</span>
         </div>
+
+        <transition name="slide-fade">
+        <div v-show="isBigFiveOpen" class="bf-wrap">
+
+            <!-- ① 封面 -->
+            <div v-if="bfStage === 'cover'" class="bf-cover">
+                <div class="bf-ocean-tags">
+                    <span class="bf-tag" style="color:#5c8dd6;border-color:#5c8dd688">O 开放性</span>
+                    <span class="bf-tag" style="color:#56b888;border-color:#56b88888">C 尽责性</span>
+                    <span class="bf-tag" style="color:#e8a44a;border-color:#e8a44a88">E 外向性</span>
+                    <span class="bf-tag" style="color:#e06b8b;border-color:#e06b8b88">A 宜人性</span>
+                    <span class="bf-tag" style="color:#9b72cf;border-color:#9b72cf88">N 情绪稳定性</span>
+                </div>
+                <p class="bf-cover-desc">120道题，完整测量大五人格五个维度，约需15分钟。所有数据仅保存在你的账户中。</p>
+                <div class="bf-gender-row">
+                    <span class="bf-gender-label">性别（用于校准，不影响好坏）</span>
+                    <div class="bf-gender-btns">
+                        <button v-for="g in [{v:'F',l:'女'},{v:'M',l:'男'},{v:'N',l:'不透露'}]" :key="g.v"
+                                :class="['bf-gbtn', {active: bfGender===g.v}]"
+                                @click="bfGender=g.v">{{ g.l }}</button>
+                    </div>
+                </div>
+                <button class="bf-start-btn" @click="bfStart">开始测试 →</button>
+                <p v-if="currentUser?.big_five" class="bf-existing">已有得分码：{{ currentUser.big_five }}，重新测试将覆盖旧数据。</p>
+            </div>
+
+            <!-- ② 测试中 -->
+            <div v-if="bfStage === 'testing'" class="bf-testing">
+                <!-- 进度条 -->
+                <div class="bf-progress-bar">
+                    <div class="bf-progress-fill" :style="{width: bfProgressPct + '%'}"></div>
+                </div>
+                <div class="bf-progress-info">
+                    <span>第 {{ bfPage+1 }} 页 / 共 {{ bfTotalPages }} 页</span>
+                    <span style="color:var(--accent)">{{ bfAnsweredCount }} / 120 已作答</span>
+                </div>
+
+                <!-- 维度标签 -->
+                <div class="bf-dim-label" :style="{color: bfCurrentDimColor, background: bfCurrentDimColor+'18', borderColor: bfCurrentDimColor+'44'}">
+                    {{ bfCurrentDimLabel }}
+                </div>
+
+                <!-- 题目列表 -->
+                <div class="bf-questions">
+                    <div v-for="q in bfPageQuestions" :key="q.id"
+                         :class="['bf-qcard', {answered: bfAnswers[q.id]}]">
+                        <div class="bf-qnum">题目 {{ q.id }} / 120</div>
+                        <div class="bf-qtext">{{ q.text }}</div>
+                        <div class="bf-scale">
+                            <span class="bf-slabel">非常不同意</span>
+                            <div class="bf-scale-btns">
+                                <button v-for="v in [1,2,3,4,5]" :key="v"
+                                        :class="['bf-sbtn', {selected: bfAnswers[q.id]===v}]"
+                                        @click="bfSelect(q.id, v)">{{ v }}</button>
+                            </div>
+                            <span class="bf-slabel">非常同意</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 翻页 -->
+                <p v-if="bfPageError" class="bf-page-error">{{ bfPageError }}</p>
+                <div class="bf-nav">
+                    <button class="bf-nav-btn" :disabled="bfPage===0" @click="bfChangePage(-1)">← 上一页</button>
+                    <div class="bf-dots">
+                        <span v-for="i in bfTotalPages" :key="i"
+                              :class="['bf-dot', {active: i-1===bfPage, done: i-1<bfPage}]"></span>
+                    </div>
+                    <button class="bf-nav-btn primary" @click="bfChangePage(1)">
+                        {{ bfPage===bfTotalPages-1 ? '查看结果 ✨' : '下一页 →' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- ③ 结果 -->
+            <div v-if="bfStage === 'result'" class="bf-result">
+                <div class="bf-score-badge">{{ bfScoreStr }}</div>
+                <p class="bf-result-sub">你的大五人格图谱</p>
+
+                <!-- 雷达图 -->
+                <canvas ref="bfRadar" width="280" height="280" class="bf-radar-canvas"></canvas>
+
+                <!-- 五维度条 -->
+                <div class="bf-dim-bars">
+                    <div v-for="d in bfDimOrder" :key="d" class="bf-dim-row">
+                        <div class="bf-dim-name" :style="{color: bfDimInfo[d].color}">{{ bfDimInfo[d].label }}</div>
+                        <div class="bf-dim-track">
+                            <div class="bf-dim-fill" :style="{width: bfScores[d]+'%', background: bfDimInfo[d].color}"></div>
+                        </div>
+                        <div class="bf-dim-num" :style="{color: bfDimInfo[d].color}">{{ bfScores[d] }}</div>
+                    </div>
+                </div>
+
+                <!-- 解读文字 -->
+                <div class="bf-interpretations">
+                    <div v-for="d in bfDimOrder" :key="d" class="bf-interp-card" :style="{'border-left-color': bfDimInfo[d].color}">
+                        <div class="bf-interp-title" :style="{color: bfDimInfo[d].color}">
+                            {{ bfDimInfo[d].label }} · {{ bfScores[d] >= 65 ? '偏高' : bfScores[d] <= 35 ? '偏低' : '居中' }}
+                        </div>
+                        <p class="bf-interp-desc">{{ bfScores[d] >= 65 ? bfDimInfo[d].desc_high : bfScores[d] <= 35 ? bfDimInfo[d].desc_low : bfDimInfo[d].desc_mid }}</p>
+                    </div>
+                </div>
+
+                <!-- 保存按钮 -->
+                <button class="bf-save-btn" :disabled="bfSaving" @click="bfSave">
+                    {{ bfSaving ? '保存中...' : bfSaved ? '✓ 已保存到档案' : '保存到我的档案' }}
+                </button>
+                <button class="bf-retry-btn" @click="bfRetry">重新测试</button>
+            </div>
+
+        </div>
+        </transition>
     </div>
 
     <div class="test-card glass-card attachment-card">
@@ -785,14 +856,17 @@
         <transition name="slide-fade">
             <div v-show="isAttachmentOpen" class="attachment-body">
                 <div class="attachment-list">
-                    <div v-for="(q, index) in attachmentQuestions" :key="index" class="q-item">
+                    <div v-for="(q, index) in attachmentQuestions" :key="index" class="q-scenario">
                         <div class="q-info">
                             <span class="q-idx">{{ index + 1 }}</span>
                             <span class="q-text">{{ q.text }}</span>
                         </div>
-                        <div class="q-btns">
-                            <button @click="q.score = 1" :class="['tag-btn', { active: q.score === 1 }]">符合</button>
-                            <button @click="q.score = 0" :class="['tag-btn', { active: q.score === 0 }]">不符</button>
+                        <div class="q-options">
+                            <button v-for="(opt, oi) in q.options" :key="oi"
+                              @click="q.score = 2 - oi"
+                              :class="['q-opt-btn', { active: q.score === 2 - oi }]">
+                              {{ opt }}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -809,59 +883,6 @@
         </div>
     </div>
 </div>
-      <!-- 最近心情记录 -->
-      <!-- <div class="section recent-mood">
-        <h2>📝 近期心情便签</h2>
-        <div v-if="formattedRecords.length === 0" class="empty">
-          🫧 尚未记录任何心情，去主页试试吧～
-        </div>
-        <div v-else class="records-list">
-          <div v-for="(r, i) in formattedRecords.slice(0, 6)" :key="i" class="record-item">
-            摘要栏
-            <div class="record-summary" @click="toggleMood(i)">
-              <span class="emoji">{{ r.emoji }}</span>
-              <span class="text-preview">{{ r.text.slice(0, 18) }}{{ r.text.length > 18 ? '…' : '' }}</span>
-              <span class="expand-btn">{{ expandedMood.has(i) ? '收起' : '展开' }}</span>
-            </div>
-            展开区
-            <transition name="slide-fade">
-              <div v-if="expandedMood.has(i)" class="record-detail">
-                <div class="text-full">{{ r.text }}</div>
-                <div class="time-row">
-                  <span class="time">{{ r.date }}</span>
-                  <button class="del-btn" @click.stop="delMood(i)">删除</button>
-                </div>
-              </div>
-            </transition>
-          </div>
-        </div>
-      </div>
-
-      树洞历史
-      <div class="section treehole-history">
-        <h2>🌙 树洞说过的话</h2>
-        <div v-if="formattedTreeholeHistory.length === 0" class="empty">
-          🕳️ 还没向树洞说过悄悄话呢
-        </div>
-        <div v-else class="treehole-list">
-          <div v-for="(t, i) in formattedTreeholeHistory" :key="i" class="treehole-item">
-            摘要栏
-            <div class="treehole-summary" @click="toggleTreehole(i)">
-              <span class="time">{{ t.date }}</span>
-              <span class="expand-btn">{{ expandedTH.has(i) ? '收起' : '展开' }}</span>
-            </div>
-            展开区
-            <transition name="slide-fade">
-              <div v-if="expandedTH.has(i)" class="treehole-detail">
-                <blockquote>「{{ t.message }}」</blockquote>
-                <p class="reply">树洞回信：{{ t.reply }}</p>
-                <button class="del-btn" @click.stop="delTreehole(t.id)">删除</button>
-              </div>
-            </transition>
-          </div>
-        </div>
-      </div> -->
-
       <!-- 底部操作栏 -->
       <div class="action-footer">
         <button @click="logout" class="btn-logout">退出登录</button>
@@ -925,13 +946,32 @@
     </div>
   </div>
 </div>
-<footer class="icp-footer">
-  <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">湘ICP备2026015923号</a>
-</footer>
     </transition>
   </div>
 
+  <!-- 情绪档案全局居中弹窗 -->
+  <teleport to="body">
+    <transition name="archive-pop">
+      <div v-if="activeArchive" class="archive-global-overlay" @click="activeArchive = null">
+        <div class="archive-global-modal" @click.stop>
+          <button class="archive-global-close" @click="activeArchive = null">×</button>
+          <div class="archive-global-header">
+            <span class="archive-global-emoji">{{ activeArchive.emoji }}</span>
+            <div class="archive-global-time">{{ new Date(activeArchive.time).toLocaleString('zh-CN') }}</div>
+            <div class="archive-global-subtitle">的档案回响</div>
+          </div>
+          <div class="archive-global-body">
+            <p>{{ activeArchive.text }}</p>
+          </div>
+          <div class="archive-global-footer">
+            <span class="modal-tag">#深度记忆</span>
+            <span class="modal-tag">#情绪便利店</span>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </teleport>
+
   <script src="emotion.js"></script>
 </body>
-
 </html>

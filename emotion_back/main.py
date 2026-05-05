@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 
-from routers import users, moods, treehole, bottles, community, ai, big_five
+from routers import users, moods, treehole, bottles, community, ai
 
 
 # 1. 定义 lifespan
@@ -32,7 +32,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 # main.py
-app.include_router(big_five.router)
 app.include_router(community.router, prefix="/api/community",tags=["社区广场"])
 app.include_router(users.router, prefix="/api/users")
 app.include_router(moods.router, prefix="/api/moods", tags=["情绪"])

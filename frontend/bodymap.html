@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>身体地图 · 心晴</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+:root {
+  --surface:   #0f0f2e;
+  --glass:     rgba(255,255,255,0.04);
+  --glass-b:   rgba(255,255,255,0.07);
+  --accent:    #7c6cf0;
+  --accent2:   #c084fc;
+  --teal:      #4dd9c0;
+  --white:     #e8e4ff;
+  --muted:     rgba(200,190,255,0.55);
+  --border:    rgba(180,160,255,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: var(--surface);
+  color: var(--white);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 30%, rgba(124,108,240,0.15) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 70%, rgba(192,132,252,0.1) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, rgba(77,217,192,0.05) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── 页面容器 ── */
+#app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px 60px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ── 顶部标题 ── */
+.page-header {
+  text-align: center;
+  margin-bottom: 36px;
+  width: 100%;
+}
+
+.page-eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.25em;
+  color: var(--teal);
+  opacity: 0.8;
+  margin-bottom: 10px;
+}
+
+.page-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--white) 30%, var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+
+.page-sub {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ── 主布局 ── */
+.main-layout {
+  display: flex;
+  gap: 32px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+/* ── 人体图区域 ── */
+.body-panel {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 24px;
+}
+
+.body-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* SVG 热区 */
+.spot {
+  cursor: pointer;
+}
+.spot-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  opacity: 0;
+  transition: opacity 0.3s, r 0.3s;
+  r: 12;
+}
+.spot-dot {
+  fill: var(--accent);
+  opacity: 0.25;
+  transition: all 0.25s;
+  r: 8;
+}
+.spot:hover .spot-dot,
+.spot.active .spot-dot {
+  opacity: 0.7;
+  r: 11;
+}
+.spot:hover .spot-ring,
+.spot.active .spot-ring {
+  opacity: 0.6;
+  r: 16;
+}
+.spot.active .spot-dot {
+  fill: var(--accent2);
+  opacity: 0.85;
+}
+.spot-pulse {
+  fill: var(--accent);
+  opacity: 0;
+  r: 8;
+}
+.spot.active .spot-pulse {
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0%   { r: 8;  opacity: 0.5; }
+  100% { r: 22; opacity: 0; }
+}
+
+/* ── 信息面板 ── */
+.info-panel {
+  flex: 1;
+  min-width: 0;
+}
+
+.info-empty {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 48px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.info-empty-icon {
+  font-size: 2.5rem;
+  opacity: 0.4;
+}
+
+.info-empty-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.info-empty-sub {
+  font-size: 0.82rem;
+  color: rgba(200,180,255,0.35);
+  line-height: 1.7;
+}
+
+/* 信息卡片 */
+.info-card {
+  display: none;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeInUp 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.info-card.visible { display: flex; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 区域名称 */
+.zone-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.zone-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(124,108,240,0.3), rgba(192,132,252,0.2));
+  border: 1px solid rgba(124,108,240,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.zone-meta { flex: 1; }
+
+.zone-name {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #c4b5fd;
+  margin-bottom: 3px;
+}
+
+.zone-tag {
+  font-size: 0.72rem;
+  color: var(--teal);
+  background: rgba(77,217,192,0.1);
+  border: 1px solid rgba(77,217,192,0.2);
+  padding: 2px 10px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+/* 情绪描述 */
+.emotion-block {
+  background: rgba(124,108,240,0.08);
+  border: 1px solid rgba(124,108,240,0.18);
+  border-radius: 16px;
+  padding: 18px 20px;
+  position: relative;
+}
+
+.emotion-label {
+  font-size: 0.72rem;
+  color: #a78bfa;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.emotion-text {
+  font-size: 0.9rem;
+  color: rgba(230,220,255,0.88);
+  line-height: 1.8;
+}
+
+/* 关怀建议 */
+.care-section {}
+
+.care-title {
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+.care-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.care-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--glass-b);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.care-item:hover {
+  border-color: rgba(180,150,255,0.28);
+  background: rgba(255,255,255,0.06);
+}
+
+.care-emoji {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
+.care-text {
+  font-size: 0.88rem;
+  color: rgba(220,210,255,0.82);
+  line-height: 1.7;
+}
+
+/* ICP */
+.icp-footer {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: rgba(200,180,255,0.25);
+}
+.icp-footer a { color: inherit; text-decoration: none; }
+.icp-footer a:hover { color: rgba(200,180,255,0.5); }
+
+/* ── 响应式 ── */
+@media (max-width: 768px) {
+  .main-layout { flex-direction: column; align-items: center; }
+  .body-panel { position: static; flex: unset; width: 100%; max-width: 280px; }
+  .info-panel { width: 100%; }
+  .info-empty { padding: 32px 20px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <a href="/" style="position:fixed;top:18px;left:20px;z-index:999;background:rgba(124,108,240,0.25);border:1px solid rgba(180,150,255,0.3);color:#c4b5fd;text-decoration:none;padding:7px 16px;border-radius:20px;font-size:0.82rem;backdrop-filter:blur(10px);">← 返回</a>
+
+  <div class="page-header">
+    <div class="page-eyebrow">BODY · EMOTIONS · CARE</div>
+    <h1 class="page-title">身体地图</h1>
+    <p class="page-sub">身体有时会替我们说出那些还没来得及表达的情绪。<br>点击你感到不舒服的地方，听听它想告诉你什么。</p>
+  </div>
+
+  <div class="main-layout">
+
+    <!-- 人体图 -->
+    <div class="body-panel">
+      <svg width="280" height="490" viewBox="0 0 280 490" role="img" xmlns="http://www.w3.org/2000/svg">
+        <title>身体情绪地图</title>
+        <desc>人体轮廓，标注常见躯体化情绪部位，点击查看情绪含义与关怀建议</desc>
+
+        <!-- 人体轮廓 -->
+        <!-- 头 -->
+        <ellipse cx="140" cy="52" rx="34" ry="40" fill="none" stroke="rgba(180,160,255,0.2)" stroke-width="1.5"/>
+        <!-- 颈 -->
+        <path d="M124 90 L124 108 Q124 112 128 112 L152 112 Q156 112 156 108 L156 90" fill="none" stroke="rgba(180,160,255,0.2)" stroke-width="1.5"/>
+        <!-- 躯干 -->
+        <path d="M90 112 Q78 122 76 158 L74 244 Q74 258 88 262 L116 266 L118 368 L130 368 L132 282 L148 282 L150 368 L162 368 L164 266 L192 262 Q206 258 206 244 L204 158 Q202 122 190 112 Z" fill="none" stroke="rgba(180,160,255,0.2)" stroke-width="1.5"/>
+        <!-- 左臂 -->
+        <path d="M83 118 Q66 134 60 174 Q56 206 60 234 Q62 244 72 246" fill="none" stroke="rgba(180,160,255,0.2)" stroke-width="1.5"/>
+        <!-- 右臂 -->
+        <path d="M197 118 Q214 134 220 174 Q224 206 220 234 Q218 244 208 246" fill="none" stroke="rgba(180,160,255,0.2)" stroke-width="1.5"/>
+        <!-- 左腿 -->
+        <path d="M116 266 L110 368 L108 428 Q108 444 118 448 L126 448 L130 368" fill="none" stroke="rgba(180,160,255,0.2)" stroke-width="1.5"/>
+        <!-- 右腿 -->
+        <path d="M164 266 L170 368 L172 428 Q172 444 162 448 L154 448 L150 368" fill="none" stroke="rgba(180,160,255,0.2)" stroke-width="1.5"/>
+
+        <!-- 热区：头部 -->
+        <g class="spot" id="sp-head" onclick="activate('head')">
+          <circle class="spot-pulse" cx="166" cy="38"/>
+          <circle class="spot-ring" cx="166" cy="38"/>
+          <circle class="spot-dot" cx="166" cy="38"/>
+        </g>
+        <text x="180" y="42" fill="rgba(200,180,255,0.45)" font-size="11" font-family="Noto Sans SC">头部</text>
+
+        <!-- 热区：喉咙 -->
+        <g class="spot" id="sp-throat" onclick="activate('throat')">
+          <circle class="spot-pulse" cx="56" cy="100"/>
+          <circle class="spot-ring" cx="56" cy="100"/>
+          <circle class="spot-dot" cx="56" cy="100"/>
+          <line x1="64" y1="100" x2="124" y2="100" stroke="rgba(124,108,240,0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+        </g>
+        <text x="14" y="104" fill="rgba(200,180,255,0.45)" font-size="11" font-family="Noto Sans SC">喉咙</text>
+
+        <!-- 热区：肩膀 -->
+        <g class="spot" id="sp-shoulder" onclick="activate('shoulder')">
+          <circle class="spot-pulse" cx="224" cy="122"/>
+          <circle class="spot-ring" cx="224" cy="122"/>
+          <circle class="spot-dot" cx="224" cy="122"/>
+          <line x1="216" y1="122" x2="197" y2="122" stroke="rgba(124,108,240,0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+        </g>
+        <text x="230" y="126" fill="rgba(200,180,255,0.45)" font-size="11" font-family="Noto Sans SC">肩膀</text>
+
+        <!-- 热区：胸口 -->
+        <g class="spot" id="sp-chest" onclick="activate('chest')">
+          <circle class="spot-pulse" cx="56" cy="155"/>
+          <circle class="spot-ring" cx="56" cy="155"/>
+          <circle class="spot-dot" cx="56" cy="155"/>
+          <line x1="64" y1="155" x2="112" y2="155" stroke="rgba(124,108,240,0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+        </g>
+        <text x="14" y="159" fill="rgba(200,180,255,0.45)" font-size="11" font-family="Noto Sans SC">胸口</text>
+
+        <!-- 热区：胃部 -->
+        <g class="spot" id="sp-stomach" onclick="activate('stomach')">
+          <circle class="spot-pulse" cx="224" cy="182"/>
+          <circle class="spot-ring" cx="224" cy="182"/>
+          <circle class="spot-dot" cx="224" cy="182"/>
+          <line x1="216" y1="182" x2="174" y2="182" stroke="rgba(124,108,240,0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+        </g>
+        <text x="230" y="186" fill="rgba(200,180,255,0.45)" font-size="11" font-family="Noto Sans SC">胃部</text>
+
+        <!-- 热区：腹部 -->
+        <g class="spot" id="sp-belly" onclick="activate('belly')">
+          <circle class="spot-pulse" cx="56" cy="220"/>
+          <circle class="spot-ring" cx="56" cy="220"/>
+          <circle class="spot-dot" cx="56" cy="220"/>
+          <line x1="64" y1="220" x2="112" y2="220" stroke="rgba(124,108,240,0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+        </g>
+        <text x="14" y="224" fill="rgba(200,180,255,0.45)" font-size="11" font-family="Noto Sans SC">腹部</text>
+
+        <!-- 热区：背部 -->
+        <g class="spot" id="sp-back" onclick="activate('back')">
+          <circle class="spot-pulse" cx="224" cy="220"/>
+          <circle class="spot-ring" cx="224" cy="220"/>
+          <circle class="spot-dot" cx="224" cy="220"/>
+          <line x1="216" y1="220" x2="180" y2="220" stroke="rgba(124,108,240,0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+        </g>
+        <text x="230" y="224" fill="rgba(200,180,255,0.45)" font-size="11" font-family="Noto Sans SC">背部</text>
+
+        <!-- 热区：手腕 -->
+        <g class="spot" id="sp-hands" onclick="activate('hands')">
+          <circle class="spot-pulse" cx="56" cy="246"/>
+          <circle class="spot-ring" cx="56" cy="246"/>
+          <circle class="spot-dot" cx="56" cy="246"/>
+          <line x1="64" y1="246" x2="72" y2="246" stroke="rgba(124,108,240,0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+        </g>
+        <text x="14" y="250" fill="rgba(200,180,255,0.45)" font-size="11" font-family="Noto Sans SC">手腕</text>
+
+        <!-- 热区：双腿 -->
+        <g class="spot" id="sp-legs" onclick="activate('legs')">
+          <circle class="spot-pulse" cx="224" cy="325"/>
+          <circle class="spot-ring" cx="224" cy="325"/>
+          <circle class="spot-dot" cx="224" cy="325"/>
+          <line x1="216" y1="325" x2="175" y2="315" stroke="rgba(124,108,240,0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+        </g>
+        <text x="230" y="329" fill="rgba(200,180,255,0.45)" font-size="11" font-family="Noto Sans SC">双腿</text>
+      </svg>
+
+      <div class="body-hint">点击发亮的圆点<br>了解这个部位的情绪语言</div>
+    </div>
+
+    <!-- 信息面板 -->
+    <div class="info-panel">
+
+      <!-- 空状态 -->
+      <div class="info-empty" id="info-empty">
+        <div class="info-empty-icon">✦</div>
+        <div class="info-empty-title">身体在等待被倾听</div>
+        <div class="info-empty-sub">身体的每一处不适<br>都可能是某种情绪在寻找出口<br>点击左侧身体上的部位，开始探索</div>
+      </div>
+
+      <!-- 内容卡片 -->
+      <div class="info-card" id="info-card">
+
+        <div class="zone-header">
+          <div class="zone-icon" id="zone-icon"></div>
+          <div class="zone-meta">
+            <div class="zone-name" id="zone-name"></div>
+            <span class="zone-tag" id="zone-tag"></span>
+          </div>
+        </div>
+
+        <div class="emotion-block">
+          <div class="emotion-label">🔍 这里可能藏着什么</div>
+          <div class="emotion-text" id="zone-emotion"></div>
+        </div>
+
+        <div class="care-section">
+          <div class="care-title">温和的关怀方式，送给此刻的你</div>
+          <div class="care-list" id="care-list"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="icp-footer">
+    <a href="https://beian.miit.gov.cn/" target="_blank">湘ICP备2026015923号</a>
+  </div>
+
+</div>
+
+<script>
+const DATA = {
+  head: {
+    icon: '🧠', name: '头部 · 太阳穴', tag: '过度思考',
+    emotion: '头痛或头部的沉重感，往往是思绪过度运转的信号。当我们反复权衡某件事、担忧未来，或者试图控制一个不确定的结果时，紧绷感会悄悄在这里积累。有时候，大脑只是太累了——它一直在工作，你也许忘了给它一点休息。',
+    care: [
+      { e: '🌬️', t: '双手轻轻按压太阳穴，做三次深长的呼吸。每次呼气时，想象紧绷感随着气息一点点流走，不需要用力，只是感受。' },
+      { e: '🌿', t: '给自己五分钟的「停止思考」时间——不需要解决任何事，只是看看窗外，或者闭上眼睛，允许思绪静下来。' },
+      { e: '💧', t: '慢慢喝一杯温水。有时候身体的紧张只是需要一点补充和温柔对待，就像给干涸的地方浇一点水。' }
+    ]
+  },
+  throat: {
+    icon: '🗝️', name: '喉咙 · 颈部', tag: '未说出口的话',
+    emotion: '喉咙的堵塞感、紧绷或吞咽时的不适，常常出现在我们压住了什么没有说出口的时候——一句没讲完的话，一个被硬撑回去的哭泣，或者某种害怕说错了的沉默。喉咙是表达的通道，当它被堵住，往往是因为有什么情绪还没找到出口。',
+    care: [
+      { e: '🎵', t: '轻声哼唱一段熟悉的旋律，或者只是发出一个长长的「嗯——」声，感受喉咙的振动。声音本身就是一种释放。' },
+      { e: '✍️', t: '把想说但没说出口的话写下来。不需要给任何人看，也不用写得好——只是让它离开身体，落在纸上。' },
+      { e: '🍵', t: '喝一杯温热的饮品，感受温暖从喉咙一路向下流淌。让那里的紧绷慢慢软化，慢慢开放。' }
+    ]
+  },
+  shoulder: {
+    icon: '🏔️', name: '肩膀 · 颈肩', tag: '负重太多',
+    emotion: '肩膀是我们「扛」东西的地方。当压力很大、当我们长期承担别人的期待、或者觉得自己不能倒下时，肩膀往往会在不知不觉间越来越僵硬。就好像把整个世界都架在了上面，却没有人告诉我们，可以把它放下来一会儿。',
+    care: [
+      { e: '🔄', t: '慢慢向后转动双肩，做几圈，速度越慢越好。每一圈都像在卸下一点点重量，感受肌肉缓缓松开的感觉。' },
+      { e: '🤲', t: '用一只手轻轻捏按另一侧的肩颈，同时在心里说一句：「不是所有事情都需要我来扛。」' },
+      { e: '🛁', t: '如果有条件，用热水淋浴或热敷肩颈几分钟，让肌肉知道——可以放松了，这里是安全的。' }
+    ]
+  },
+  chest: {
+    icon: '💜', name: '胸口 · 心脏区', tag: '爱与失落',
+    emotion: '胸口的压迫、心跳加速或胸口发闷，常常是焦虑、深深的悲伤，或者思念某人的方式。当我们爱着什么、失去什么，或者站在一个不确定的边缘，这份沉甸甸的感觉最容易聚集在这里。胸口的重，是心在说话。',
+    care: [
+      { e: '🤲', t: '把一只手轻轻放在胸口，感受心跳。它一直在跳，一直陪着你，支撑着你，哪怕你不注意它。' },
+      { e: '🌬️', t: '试试「4-7-8呼吸」：吸气4秒，屏住7秒，缓慢呼气8秒。重复三次，帮助神经系统慢下来。' },
+      { e: '🌸', t: '如果感到悲伤，允许自己感受它。悲伤不是危险的——它说明你爱过、在乎过，那是珍贵的。' }
+    ]
+  },
+  stomach: {
+    icon: '🌀', name: '胃部 · 上腹', tag: '焦虑预感',
+    emotion: '胃是情绪最敏感的地方之一，它甚至比脑子更早感受到危险的信号。焦虑、紧张、对即将到来的事情的隐隐担忧——这些情绪往往先在胃里翻腾：恶心、痉挛，或者一种空落落的感觉。"直觉"这个词，就是从胃那里来的。',
+    care: [
+      { e: '🌿', t: '顺时针轻轻按摩上腹部，用温柔缓慢的力道，像在安慰一个紧张的孩子。感受手掌的温度传进去。' },
+      { e: '🧘', t: '做腹式呼吸：吸气时让腹部轻轻鼓起来，呼气时慢慢回落。让胃感受到你的关注和温柔。' },
+      { e: '🍵', t: '喝一点温姜茶或蜂蜜水，温热的液体可以帮助放松胃部的紧绷，也给自己一点安慰。' }
+    ]
+  },
+  belly: {
+    icon: '🌱', name: '腹部 · 下腹', tag: '安全感',
+    emotion: '下腹部的不适有时和最深层的「安全感」有关。当我们感到不被保护、对某种失控充满恐惧，或者边界被侵犯时，身体会在这个最核心的地方感受到那份威胁。这里是生命力的中心，它比任何地方都渴望被保护。',
+    care: [
+      { e: '✨', t: '闭上眼睛，想象腹部中央有一个温暖的光点，随着每次呼吸微微发光、扩大。告诉自己：我是安全的。' },
+      { e: '🤲', t: '双手交叠放在下腹，感受手掌的温度慢慢传递过去，轻声对自己说：「这里是安全的，我保护你。」' },
+      { e: '🏠', t: '找一个让你感到安全的角落，可以蜷缩一会儿，用毯子裹住自己，给身体一点被包裹的感觉。' }
+    ]
+  },
+  back: {
+    icon: '🌊', name: '背部 · 腰背', tag: '孤立无援',
+    emotion: '背痛尤其是腰部的酸胀，常常和长期独自承受有关。当我们感到「没有人支撑着我」、需要一个人扛下所有事情的时候，背部会最先表现出疲惫。背，是别人看不见你的那一面，也是最容易被忽视、却悄悄承受最多的地方。',
+    care: [
+      { e: '🧘', t: '平躺下来，让背部完全贴在床或地板上，感受地面托住你的重量。你不需要一直撑着，可以被支撑。' },
+      { e: '🔥', t: '用热水袋或暖宝宝敷在腰部10-15分钟，温热可以缓解肌肉持续的收缩，让它们知道可以休息了。' },
+      { e: '🤝', t: '今天，允许自己寻求一次帮助。哪怕只是让人陪你坐一会儿，说说心里的事——你不需要一个人扛。' }
+    ]
+  },
+  hands: {
+    icon: '🌿', name: '手腕 · 双手', tag: '无力感',
+    emotion: '手是我们与世界连接、行动和触碰的方式。当我们感到无力、不知道该怎么办、或者渴望触碰却无法触碰某人时，双手会有一种说不清的酸胀或沉重。手握住过很多，也放开过很多——它们比我们想象的更懂得失去。',
+    care: [
+      { e: '💧', t: '用温水慢慢洗手，感受水流过每根手指的感觉，把注意力拉回到此刻、此地、这双手。' },
+      { e: '🤲', t: '双手互握，轻轻用力再放开，重复几次。感受自己手的温度和力量——它们还在，还可以做很多事。' },
+      { e: '✍️', t: '拿起笔，随意在纸上涂画，不需要画什么。让手动起来，情绪有时会顺着指尖悄悄流走。' }
+    ]
+  },
+  legs: {
+    icon: '🌿', name: '双腿 · 膝盖', tag: '被困住了',
+    emotion: '腿部的沉重、无力或者「想逃却跑不动」，常常出现在我们感到「被困住」的时候——无论是一段走不出的关系、一种看不到出口的处境，还是某个内心循环一直无法打破。腿是带我们去往哪里的，当它们沉了，往往是因为我们不知道要去哪里。',
+    care: [
+      { e: '🚶', t: '如果可以，出去走走——哪怕只是在房间里走几圈，或者在门口站一下。让腿记得，它是可以带你走的。' },
+      { e: '🌊', t: '坐下来，用手拍打或轻轻按摩大腿，把感知带回到下半身。帮助自己感受腿的存在，接接地气。' },
+      { e: '🌱', t: '做几次「脚踩大地」：双脚平放踩稳地面，感受脚底的压力，告诉自己：此刻，我是稳的。' }
+    ]
+  }
+};
+
+let current = null;
+
+function activate(key) {
+  if (current) {
+    document.getElementById('sp-' + current).classList.remove('active');
+  }
+  current = key;
+  document.getElementById('sp-' + key).classList.add('active');
+
+  const d = DATA[key];
+  document.getElementById('zone-icon').textContent = d.icon;
+  document.getElementById('zone-name').textContent = d.name;
+  document.getElementById('zone-tag').textContent = d.tag;
+  document.getElementById('zone-emotion').textContent = d.emotion;
+
+  const list = document.getElementById('care-list');
+  list.innerHTML = '';
+  d.care.forEach(c => {
+    list.innerHTML += `<div class="care-item"><div class="care-emoji">${c.e}</div><div class="care-text">${c.t}</div></div>`;
+  });
+
+  document.getElementById('info-empty').style.display = 'none';
+  const card = document.getElementById('info-card');
+  card.classList.remove('visible');
+  void card.offsetWidth; // trigger reflow for animation
+  card.classList.add('visible');
+}
+</script>
+</body>
+</html>

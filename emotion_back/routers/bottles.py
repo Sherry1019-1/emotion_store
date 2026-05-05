@@ -89,6 +89,21 @@ async def pick_bottle(
     top_pool = [b for _, b in scored[:pool_size]]
     chosen = random.choice(top_pool)
 
+    # 5️⃣ 第四阶段：判定“幸运/自我遇见”状态
+    lucky_flag = False
+    lucky_msg = None
+
+    # 如果抽中的瓶子是自己的（通过 user_id 判断）
+    if chosen.user_id == current_user.id:
+        # 触发 20% 的“觉醒”提示概率，或者你可以设置为 100% 只要抽到自己就提示
+        lucky_flag = True
+        lucky_msg = random.choice([
+            "✨ 你捞到了过去的自己，那一刻的你也在等你",
+            "🌊 海浪翻涌，你与自己的灵魂再次相遇",
+            "💫 命运回响：你值得被现在的自己拥抱",
+            "🍀 幸运时刻：也许答案一直在你心里"
+        ])
+
     # 6️⃣ 标记并提交数据库
     chosen.picked = True
     chosen.picker_id = current_user.id
@@ -100,10 +115,12 @@ async def pick_bottle(
         await db.rollback()
         raise HTTPException(status_code=500, detail="打捞失败，海浪太大了")
 
+    # 7️⃣ 返回结果
+    # 注意：前端需要适配这种返回格式 { bottle: {...}, lucky: bool, lucky_msg: string }
     return {
         "bottle": chosen,
-        "lucky": False,
-        "lucky_msg": None
+        "lucky": lucky_flag,
+        "lucky_msg": lucky_msg
     }
 
 @router.get("/my", response_model=list[BottleOut])
@@ -194,19 +211,10 @@ async def comment_bottle(
         "user_id": current_user.id,
         "username": current_user.username,
         "text": comment_in.text,
-        "time": datetime.now().isoformat()
+        "time": datetime.now(tz=__import__("zoneinfo").ZoneInfo("Asia/Shanghai")).isoformat()
     }
 
-    if isinstance(bottle.comments, str):
-        try:
-            comments_list = json.loads(bottle.comments)
-        except:
-            comments_list = []
-    elif isinstance(bottle.comments, list):
-        comments_list = list(bottle.comments)
-    else:
-        comments_list = []
-
+    comments_list = list(bottle.comments) if bottle.comments else []
     comments_list.append(new_comment)
     bottle.comments = comments_list
 

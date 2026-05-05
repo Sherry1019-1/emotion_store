@@ -9,8 +9,8 @@ class Users(Base):
     img=Column(String(500))
     username=Column(String(30),unique=True)
     password = Column(String(128))
-    sex=Column(String)
-    big_five = Column(String, nullable=True)
+    sex=Column(String(10))
+    big_five = Column(String(255), nullable=True)
     big_five_done = Column(Boolean, default=False)
     # 依恋类型：安全型、焦虑型、回避型、恐惧型
     attachment_style = Column(String(20), nullable=True)

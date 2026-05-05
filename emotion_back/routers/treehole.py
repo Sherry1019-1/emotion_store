@@ -3,6 +3,7 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
+from sqlalchemy.orm.attributes import flag_modified
 from database import get_db
 from models import TreeholeHistory, PublicConfession, Users
 from schemas import TreeholePrivateCreate, TreeholePrivateOut, PublicConfessionCreate, PublicConfessionOut, CommentCreate
@@ -184,7 +185,7 @@ async def comment_public_confession(
         "user_id": current_user.id,
         "username": current_user.username,
         "text": clean_comment,
-        "time": datetime.utcnow().isoformat()
+        "time": datetime.now(tz=__import__("zoneinfo").ZoneInfo("Asia/Shanghai")).isoformat()
     }
 
     # ===== 4. 兼容旧数据（字符串 or JSON）=====
@@ -201,7 +202,8 @@ async def comment_public_confession(
 
     # ===== 5. 添加评论 =====
     current_comments.append(new_comment)
-    confession.comments = current_comments
+    confession.comments = list(current_comments)
+    flag_modified(confession, "comments")
 
     # ===== 6. 保存 =====
     await db.commit()
