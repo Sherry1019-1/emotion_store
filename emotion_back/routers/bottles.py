@@ -53,13 +53,12 @@ async def throw_bottle(
 @router.post("/pick")
 async def pick_bottle(
         db: AsyncSession = Depends(get_db),
-        current_user: Users = Depends(get_current_user)
-):
-    # 1️⃣ 基础检查：确保打捞者有性格数据
+        current_user: Users = Depends(get_current_user)):
+    # 基础检查
     if not current_user.big_five or not current_user.attachment_style:
         raise HTTPException(status_code=400, detail="请先完成人格测评，否则无法打捞瓶子")
 
-    # 2️⃣ 第一阶段：尝试打捞“别人的”瓶子
+    # 只捞别人的瓶子，绝不捞自己的
     stmt = select(Bottle).where(
         Bottle.picked == False,
         Bottle.user_id != current_user.id
@@ -67,15 +66,8 @@ async def pick_bottle(
     result = await db.execute(stmt)
     bottles = result.scalars().all()
 
-    # 3️⃣ 第二阶段：Fallback 机制（如果没有别人的瓶子，尝试打捞自己的）
     if not bottles:
-        # 尝试查找未被捡起的、属于自己的瓶子
-        stmt = select(Bottle).where(Bottle.picked == False)
-        result = await db.execute(stmt)
-        bottles = result.scalars().all()
-
-        if not bottles:
-            raise HTTPException(status_code=404, detail="海面上空空如也，晚点再来吧")
+        raise HTTPException(status_code=404, detail="海面上空空如也，等别人扔瓶子后再来吧 🌊")
 
     # 4️⃣ 第三阶段：人格匹配算法（对当前“池子”里的瓶子进行评分）
     scored = []

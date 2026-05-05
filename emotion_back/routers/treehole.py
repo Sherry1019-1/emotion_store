@@ -77,38 +77,49 @@ async def delete_private_treehole(
     await db.commit()
     return {"msg": "删除成功"}
 
-@router.get("/public", response_model=list[PublicConfessionOut])
+@router.get("/public")
 async def get_public_confessions(db: AsyncSession = Depends(get_db)):
-    stmt = select(PublicConfession).order_by(PublicConfession.time.desc())
+    import json as _json
+    stmt = select(PublicConfession, Users.username, Users.img).join(
+        Users, PublicConfession.user_id == Users.id, isouter=True
+    ).order_by(PublicConfession.time.desc())
     result = await db.execute(stmt)
-    confessions = result.scalars().all()
+    rows = result.all()
 
-    import json
+    output = []
+    for row in rows:
+        item = row[0]
+        username = row[1]
+        user_img = row[2]
 
-    for item in confessions:
-        # comments
-        if isinstance(item.comments, str):
-            try:
-                item.comments = json.loads(item.comments)
-            except:
-                item.comments = []
-        elif item.comments is None:
-            item.comments = []
+        comments = item.comments
+        if isinstance(comments, str):
+            try: comments = _json.loads(comments)
+            except: comments = []
+        elif comments is None:
+            comments = []
 
-        # liked_users
-        if isinstance(item.liked_users, str):
-            try:
-                item.liked_users = json.loads(item.liked_users)
-            except:
-                item.liked_users = []
-        elif item.liked_users is None:
-            item.liked_users = []
+        liked_users = item.liked_users
+        if isinstance(liked_users, str):
+            try: liked_users = _json.loads(liked_users)
+            except: liked_users = []
+        elif liked_users is None:
+            liked_users = []
 
-        # likes
-        if item.likes is None:
-            item.likes = 0
+        output.append({
+            "id": item.id,
+            "user_id": item.user_id,
+            "user_username": username,
+            "user_img": user_img,
+            "message": item.message,
+            "emoji": item.emoji,
+            "likes": item.likes or 0,
+            "liked_users": liked_users,
+            "comments": comments,
+            "time": item.time.isoformat() if item.time else None,
+        })
 
-    return confessions
+    return output
 
 @router.post("/public/{confession_id}/like")
 async def like_public_confession(

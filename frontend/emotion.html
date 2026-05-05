@@ -96,18 +96,26 @@
     </div>
     
     <!-- 展开内容模式 -->
-    <div v-else class="book-pages" @click.stop> <!-- stop 阻止点击内容关闭弹窗 -->
-      <h3 class="page-title">往日回音</h3>
+    <div v-else class="book-pages" @click.stop>
+      <div class="archive-top">
+        <h3 class="page-title">往日回音</h3>
+        <button class="archive-close-x" @click.stop="isArchiveOpen = false">✕</button>
+      </div>
       <div class="history-scroll">
-        <div v-for="(log, idx) in moodRecords" :key="idx" class="history-card">
+        <div v-for="(log, idx) in moodRecords" :key="idx"
+          class="history-card" :class="{ 'hc-expanded': expandedMood.has(idx) }"
+          @click.stop="toggleMoodExpand(idx)">
           <div class="history-meta">
             <span class="history-time">{{ new Date(log.time).toLocaleDateString() }}</span>
-            <span>{{ log.emoji }}</span>
+            <span class="history-emoji">{{ log.emoji }}</span>
+            <button class="hc-del-btn" @click.stop="delMood(idx)" title="删除">🗑</button>
           </div>
-          <p class="history-text">{{ log.text }}</p>
+          <p class="history-text" :class="{ 'hc-full': expandedMood.has(idx) }">{{ log.text }}</p>
+          <span v-if="!expandedMood.has(idx) && log.text && log.text.length > 40" class="hc-hint">展开全文 ▼</span>
+          <span v-if="expandedMood.has(idx)" class="hc-hint">收起 ▲</span>
         </div>
+        <div v-if="!moodRecords.length" class="hc-empty">还没有记录，去写一条吧 ✨</div>
       </div>
-      <button class="close-btn" @click="isArchiveOpen = false">收起档案</button>
     </div>
   </div>
 </div>
@@ -496,38 +504,62 @@
 
 
 <!-- 详情弹窗（模态框） -->
-<div v-if="showDetailModal && selectedConfession" class="modal-backdrop" @click="closeDetailModal">
-    <div class="modal" @click.stop>
-        <button class="close-btn" @click="closeDetailModal">×</button>
-        
-        <div class="modal-header">
-            <span class="detail-emoji">{{ selectedConfession.emoji }}</span>
-            <h3>心事详情</h3>
+<teleport to="body">
+  <transition name="conf-modal-fade">
+    <div v-if="showDetailModal && selectedConfession" class="conf-modal-overlay" @click.self="closeDetailModal">
+      <div class="conf-modal-box">
+        <button class="conf-modal-close" @click="closeDetailModal">×</button>
+
+        <!-- 作者 -->
+        <div class="conf-modal-author">
+          <div class="conf-modal-avatar conf-modal-avatar-letter">
+            {{ selectedConfession.user_username ? selectedConfession.user_username.charAt(0).toUpperCase() : (selectedConfession.username ? selectedConfession.username.charAt(0).toUpperCase() : '?') }}
+          </div>
+          <div class="conf-modal-author-info">
+            <span class="conf-modal-username">{{ selectedConfession.user_username || selectedConfession.username || '匿名' }}</span>
+            <span class="conf-modal-time">{{ formatRelativeTime(selectedConfession.time) }}</span>
+          </div>
         </div>
 
-        <div class="modal-body">
-            <p class="detail-message">{{ selectedConfession.message }}</p>
-            
-            <div class="comment-section">
-                <h4>评论 ({{ getCommentCount(selectedConfession.comments) }})</h4>
-                
-                <div class="comment-list">
-                    <div v-for="c in selectedConfession.comments" :key="c.time" class="comment-item">
-                        <template v-if="c.text">
-                            <strong>{{ c.username || '匿名行者' }}:</strong> {{ c.text }}
-                        </template>
-                    </div>
-                    <p v-if="getCommentCount(selectedConfession.comments) === 0">暂无评论...</p>
-                </div>
+        <!-- 内容 -->
+        <div class="conf-modal-content">{{ selectedConfession.message }}</div>
 
-                <div class="comment-input-group">
-                    <input v-model="newCommentText" placeholder="温柔留言..." @keyup.enter="submitComment(selectedConfession)">
-                    <button @click="submitComment(selectedConfession)">发送</button>
+        <!-- 点赞 -->
+        <div class="conf-modal-actions">
+          <button @click.stop="likeConfession(selectedConfession)" class="conf-modal-like">
+            <span>❤️</span><span>{{ selectedConfession.likes || 0 }}</span>
+          </button>
+          <span class="conf-modal-comment-count">💬 {{ getCommentCount(selectedConfession.comments) }} 条留言</span>
+        </div>
+
+        <div class="conf-modal-divider"></div>
+
+        <!-- 评论列表 -->
+        <div class="conf-modal-comments">
+          <div v-if="getCommentCount(selectedConfession.comments) === 0" class="conf-modal-empty">还没有留言，来说第一句话 ✨</div>
+          <template v-for="c in (Array.isArray(selectedConfession.comments) ? selectedConfession.comments : [])" :key="c.time">
+            <div class="conf-modal-comment-item" v-if="c && c.text">
+              <div class="conf-modal-c-avatar">{{ c.username ? c.username.charAt(0).toUpperCase() : '?' }}</div>
+              <div class="conf-modal-c-body">
+                <div class="conf-modal-c-meta">
+                  <span class="conf-modal-c-name">{{ c.username || '匿名' }}</span>
+                  <span class="conf-modal-c-time">{{ formatRelativeTime(c.time) }}</span>
                 </div>
+                <div class="conf-modal-c-text">{{ c.text }}</div>
+              </div>
             </div>
+          </template>
         </div>
+
+        <!-- 输入 -->
+        <div class="conf-modal-input-area">
+          <input v-model="newCommentText" placeholder="说点什么..." @keyup.enter="submitComment(selectedConfession)" class="conf-modal-input">
+          <button @click="submitComment(selectedConfession)" class="conf-modal-send">发送</button>
+        </div>
+      </div>
     </div>
-</div>
+  </transition>
+</teleport>
     <!-- 右侧：漂流瓶核心区 -->
     <div class="my-treehole-panel">
       <div class="panel-header">
@@ -660,12 +692,17 @@
       </div>
       
       <!-- 收到的回应（如果有） -->
-      <div v-if="b.comments && b.comments.length > 0" class="bottle-responses">
-        <div class="response-label">💬 {{ b.comments.length }} 条回应</div>
-        <div v-for="(c, idx) in b.comments" :key="idx" class="response-item">
-          <span class="response-user">{{ c.username || '匿名' }}</span>
-          <span class="response-text">{{ c.text }}</span>
-          <span class="response-time">{{ formatRelativeTime(c.time) }}</span>
+      <div v-if="getCommentCount(b.comments) > 0" class="bottle-responses">
+        <div class="response-label">💬 {{ getCommentCount(b.comments) }} 条回应</div>
+        <div v-for="(c, idx) in (typeof b.comments === 'string' ? JSON.parse(b.comments || '[]') : (b.comments || []))" :key="idx" class="response-item">
+          <div class="conf-modal-c-avatar" style="width:26px;height:26px;font-size:0.72rem;flex-shrink:0;">{{ c.username ? c.username.charAt(0).toUpperCase() : '?' }}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+              <span class="response-user">{{ c.username || '匿名' }}</span>
+              <span class="response-time">{{ formatRelativeTime(c.time) }}</span>
+            </div>
+            <span class="response-text">{{ c.text }}</span>
+          </div>
         </div>
       </div>
       <div v-else class="no-response">🤫 暂时没有回应</div>
@@ -740,9 +777,9 @@
       <!-- 用户信息头部 -->
       <div class="profile-header">
         <div class="avatar">
-          <img v-if="currentUser.avatar && (currentUser.avatar.startsWith('data:') || currentUser.avatar.startsWith('http'))"
-               :src="currentUser.avatar" />
-          <span v-else>{{ currentUser.avatar || '👤' }}</span>
+          <img v-if="currentUser.img && (currentUser.img.startsWith('data:') || currentUser.img.startsWith('http'))"
+               :src="currentUser.img" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+          <span v-else>{{ currentUser.username ? currentUser.username.charAt(0).toUpperCase() : '👤' }}</span>
         </div>
         <div class="info">
           <h1>{{ currentUser.username }}</h1>
@@ -802,9 +839,10 @@
                             <span class="q-idx">{{ index + 1 }}</span>
                             <span class="q-text">{{ q.text }}</span>
                         </div>
-                        <div class="q-btns">
-                            <button @click="q.score = 1" :class="['tag-btn', { active: q.score === 1 }]">符合</button>
-                            <button @click="q.score = 0" :class="['tag-btn', { active: q.score === 0 }]">不符</button>
+                        <div class="q-btns-v2">
+                            <button @click="q.score = 2" :class="['q-btn', { active: q.score === 2 }]">完全符合</button>
+                            <button @click="q.score = 1" :class="['q-btn', { active: q.score === 1 }]">有时如此</button>
+                            <button @click="q.score = 0" :class="['q-btn', { active: q.score === 0 }]">完全不符</button>
                         </div>
                     </div>
                 </div>

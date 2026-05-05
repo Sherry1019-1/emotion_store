@@ -598,6 +598,12 @@ body::before {
 
   <div class="save-area">
     <button class="save-btn" id="saveBtn" onclick="saveResult()">保存到我的档案</button>
+    <button class="copy-btn" id="copyBtn" onclick="copyScore()" style="
+      display:block;width:100%;max-width:320px;margin:0 auto 10px;
+      padding:12px 0;background:rgba(124,108,240,0.15);color:#c4b5fd;
+      border:1px solid rgba(124,108,240,0.3);border-radius:32px;
+      font-size:0.9rem;font-family:inherit;cursor:pointer;transition:all 0.2s;
+    ">📋 复制得分码</button>
     <button class="retry-btn" onclick="retryTest()">重新探索</button>
     <div class="saved-tip" id="savedTip" style="display:none"></div>
   </div>
@@ -838,20 +844,37 @@ async function callAI(systemPrompt, firstUserMsg) {
 // Process Reply — detect if AI returned result JSON
 // ─────────────────────────────────────────────────────────
 function processReply(text) {
+  // Strip markdown bold markers
+  const cleaned = text.replace(/\*\*/g, '');
   const marker = 'PERSONALITY_RESULT:';
-  const idx = text.indexOf(marker);
+  const idx = cleaned.indexOf(marker);
   if (idx === -1) return false;
 
   try {
-    const jsonStr = text.substring(idx + marker.length).trim();
+    // Extract everything after the marker, handle multiline
+    let jsonStr = cleaned.substring(idx + marker.length).trim();
+    // Find the closing brace of the JSON object
+    let depth = 0, endIdx = -1;
+    for (let i = 0; i < jsonStr.length; i++) {
+      if (jsonStr[i] === '{') depth++;
+      else if (jsonStr[i] === '}') { depth--; if (depth === 0) { endIdx = i; break; } }
+    }
+    if (endIdx !== -1) jsonStr = jsonStr.substring(0, endIdx + 1);
+
     const data = JSON.parse(jsonStr);
 
-    if (data.ready && data.O !== undefined) {
-      finalScores = { O: data.O, C: data.C, E: data.E, A: data.A, N: data.N };
+    if (data.O !== undefined && data.C !== undefined) {
+      finalScores = {
+        O: parseInt(data.O) || 50,
+        C: parseInt(data.C) || 50,
+        E: parseInt(data.E) || 50,
+        A: parseInt(data.A) || 50,
+        N: parseInt(data.N) || 50
+      };
       aiInsight = data.insight || '';
 
-      // Show any text before the JSON as last AI message
-      const preText = text.substring(0, idx).trim();
+      // Show any text before the marker as last AI message
+      const preText = cleaned.substring(0, idx).trim();
       if (preText) appendMsg('ai', preText);
 
       // Transition to result
@@ -862,7 +885,7 @@ function processReply(text) {
       return true;
     }
   } catch(e) {
-    console.error('Parse result failed', e);
+    console.error('Parse result failed:', e, 'text:', text.substring(0, 200));
   }
   return false;
 }
@@ -989,6 +1012,35 @@ function drawRadar(s) {
 // ─────────────────────────────────────────────────────────
 // Save
 // ─────────────────────────────────────────────────────────
+function copyScore() {
+  if (!finalScores) return;
+  const s = finalScores;
+  const scoreStr = "O" + s.O + "-C" + s.C + "-E" + s.E + "-A" + s.A + "-N" + s.N;
+  navigator.clipboard.writeText(scoreStr).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ 已复制！粘贴到主页的大五人格输入框';
+    btn.style.background = 'rgba(74,222,128,0.15)';
+    btn.style.color = '#4ade80';
+    btn.style.borderColor = 'rgba(74,222,128,0.3)';
+    setTimeout(() => {
+      btn.textContent = '📋 复制得分码';
+      btn.style.background = 'rgba(124,108,240,0.15)';
+      btn.style.color = '#c4b5fd';
+      btn.style.borderColor = 'rgba(124,108,240,0.3)';
+    }, 3000);
+  }).catch(() => {
+    // Fallback for older browsers
+    const scoreStr = "O" + s.O + "-C" + s.C + "-E" + s.E + "-A" + s.A + "-N" + s.N;
+    const el = document.createElement('textarea');
+    el.value = scoreStr;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    alert('已复制：' + scoreStr + '\n请粘贴到主页的大五人格输入框');
+  });
+}
+
 async function saveResult() {
   const token = localStorage.getItem('access_token');
   if (!token) { alert('请先登录后再保存结果'); return; }

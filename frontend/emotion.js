@@ -308,43 +308,36 @@ createApp({
     "🤬","🤡","💩","💘","💔","😘"
 ],
 attachmentQuestions: [
-  // 🟢 安全型（7题）
-  { text: "我在亲密关系中通常感到安心", type: "安全型", score: null },
-  { text: "我相信对方是稳定可靠的", type: "安全型", score: null },
-  { text: "我既能依赖别人，也能保持自我", type: "安全型", score: null },
-  { text: "我能自然表达自己的情绪", type: "安全型", score: null },
-  { text: "关系出现问题时，我愿意沟通解决", type: "安全型", score: null },
-  { text: "我不太担心被抛弃", type: "安全型", score: null },
-  { text: "即使短暂分开，我也能保持稳定情绪", type: "安全型", score: null },
-
-  // 🔴 焦虑型（8题）
-  { text: "我常担心对方不够爱我", type: "焦虑型", score: null },
-  { text: "对方回复慢会让我焦虑", type: "焦虑型", score: null },
-  { text: "我需要频繁确认关系是否稳定", type: "焦虑型", score: null },
-  { text: "我很在意对方对我的态度变化", type: "焦虑型", score: null },
-  { text: "我容易在关系中投入过多情绪", type: "焦虑型", score: null },
-  { text: "我害怕被忽视或被替代", type: "焦虑型", score: null },
-  { text: "我会反复猜测对方的想法", type: "焦虑型", score: null },
-  { text: "当对方冷淡时，我会很难受", type: "焦虑型", score: null },
-
-  // 🔵 回避型（8题）
-  { text: "我不太喜欢依赖别人", type: "回避型", score: null },
-  { text: "亲密关系让我有压力", type: "回避型", score: null },
-  { text: "我更习惯独自处理问题", type: "回避型", score: null },
-  { text: "我不喜欢别人过多了解我", type: "回避型", score: null },
-  { text: "我会刻意保持情感距离", type: "回避型", score: null },
-  { text: "我不太愿意表达脆弱", type: "回避型", score: null },
-  { text: "当别人靠近时，我会后退", type: "回避型", score: null },
-  { text: "我觉得依赖别人是不必要的", type: "回避型", score: null },
-
-  // 🟣 恐惧型（7题）
-  { text: "我既渴望亲密，又害怕亲密", type: "恐惧型", score: null },
-  { text: "我对关系常常感到矛盾", type: "恐惧型", score: null },
-  { text: "我有时很依赖，有时又想逃离", type: "恐惧型", score: null },
-  { text: "我不确定别人是否值得信任", type: "恐惧型", score: null },
-  { text: "当关系变近时，我反而会不安", type: "恐惧型", score: null },
-  { text: "我容易在关系中情绪失控", type: "恐惧型", score: null },
-  { text: "我觉得亲密关系既重要又危险", type: "恐惧型", score: null }
+  { text: "在亲密关系中，我能自然地表达自己的感受和需求，不担心对方的反应", type: "安全型", score: null },
+  { text: "当我与伴侣或亲密朋友发生冲突时，我相信通过沟通可以解决问题", type: "安全型", score: null },
+  { text: "我既能在关系中依赖别人，也能在必要时独立行事，两者不让我感到矛盾", type: "安全型", score: null },
+  { text: "即使亲近的人暂时忙碌或没有及时回复，我也不会过度担心关系出了问题", type: "安全型", score: null },
+  { text: "我对自己在关系中的价值感到踏实，不需要对方不断给予确认才能安心", type: "安全型", score: null },
+  { text: "我能够接受关系中的不完美，不会因为小摩擦就怀疑整段关系的意义", type: "安全型", score: null },
+  { text: "分离或短暂的距离不会让我产生强烈的不安，我知道关系依然稳固", type: "安全型", score: null },
+  { text: "我在关系中既能给予关心，也能坦然接受别人对我的照顾", type: "安全型", score: null },
+  { text: "如果对方很久没有主动联系我，我会开始猜测是否自己做错了什么", type: "焦虑型", score: null },
+  { text: "我需要对方频繁表达爱意或关注，否则很难确认这段关系是安全的", type: "焦虑型", score: null },
+  { text: "当对方情绪低落或冷淡时，我第一反应是担心是不是因为我的问题", type: "焦虑型", score: null },
+  { text: "我在关系中常常感到患得患失，害怕自己不够好、随时可能被抛弃", type: "焦虑型", score: null },
+  { text: "我会反复回想与对方的对话，寻找对方是否不满的蛛丝马迹", type: "焦虑型", score: null },
+  { text: "当对方忙于其他事情时，我会有一种被忽视或不被重视的失落感", type: "焦虑型", score: null },
+  { text: "我在关系中付出往往超出对方，因为这样会让我感觉更安全", type: "焦虑型", score: null },
+  { text: "一段关系里，我常常想离对方更近，但又担心自己太黏人", type: "焦虑型", score: null },
+  { text: "当关系变得过于亲密或对方表现出强烈依赖时，我会感到不自在甚至想逃离", type: "回避型", score: null },
+  { text: "我习惯自己处理情绪问题，向别人倾诉或寻求安慰会让我感到不舒服", type: "回避型", score: null },
+  { text: "我认为过多的情感依赖会削弱一个人的独立性，包括对我自己", type: "回避型", score: null },
+  { text: "当对方想深入了解我的内心世界时，我会有意识地转移话题或保持距离", type: "回避型", score: null },
+  { text: "关系越亲密，我反而越容易感到窒息或需要独处的空间", type: "回避型", score: null },
+  { text: "我不太习惯主动表达爱意，觉得行动比语言更能说明问题", type: "回避型", score: null },
+  { text: "遇到关系中的问题，我更倾向于冷静回避，而不是立即面对处理", type: "回避型", score: null },
+  { text: "我有时会用工作、爱好等活动来填满自己，以减少对亲密关系的需求感", type: "回避型", score: null },
+  { text: "我渴望亲密关系，但每当真正靠近时，内心深处又会升起恐惧或不信任", type: "恐惧型", score: null },
+  { text: "我对关系的态度常常自相矛盾：一方面想依靠别人，另一方面又担心被伤害", type: "恐惧型", score: null },
+  { text: "过去的情感经历让我很难相信一段关系可以长久且安全地存在", type: "恐惧型", score: null },
+  { text: "我有时会在关系中情绪失控，自己都不清楚为什么会有那么强烈的反应", type: "恐惧型", score: null },
+  { text: "我害怕如果让别人真正了解我，他们最终会选择离开", type: "恐惧型", score: null },
+  { text: "我在关系中的模式通常是：先主动靠近，然后因为某种恐惧感而突然疏远", type: "恐惧型", score: null },
 ],
 
 attachmentResult: "", // 存放最终结果
@@ -1220,6 +1213,16 @@ togglePickedComment() {
        
         // ===== 用户系统 =====
         openLogin() { this.showLoginModal = true; this.showRegisterModal = false; },
+        toggleMoodExpand(idx) {
+            const s = new Set(this.expandedMood);
+            s.has(idx) ? s.delete(idx) : s.add(idx);
+            this.expandedMood = s;
+        },
+        toggleMoodExpand(idx) {
+            const s = new Set(this.expandedMood);
+            s.has(idx) ? s.delete(idx) : s.add(idx);
+            this.expandedMood = s;
+        },
         openRegister() { this.showRegisterModal = true; this.showLoginModal = false; },
         closeModals() { this.showLoginModal = false; this.showRegisterModal = false; },
         openBigFiveTest() {
@@ -1332,32 +1335,29 @@ async doRegister() {
     this.calculatingAttachment = true;
 
     // ===== 2. 初始化统计 =====
-    const stats = { 
-        "安全型": 0, 
-        "焦虑型": 0, 
-        "回避型": 0, 
-        "恐惧型": 0 
-    };
+    const stats = { "安全型": 0, "焦虑型": 0, "回避型": 0, "恐惧型": 0 };
+    const counts = { "安全型": 0, "焦虑型": 0, "回避型": 0, "恐惧型": 0 };
 
-    // ===== 3. 统计（加防御）=====
+    // ===== 3. 统计（0/1/2 三档）=====
     this.attachmentQuestions.forEach(q => {
         const type = q.type;
         const score = Number(q.score) || 0;
-
         if (stats.hasOwnProperty(type)) {
             stats[type] += score;
-        } else {
-            console.warn("未知类型:", type);
+            counts[type]++;
         }
     });
+    // 换算平均分（各类型题数不等时公平）
+    const avgStats = {};
+    for (let k in stats) avgStats[k] = counts[k] > 0 ? stats[k] / counts[k] : 0;
 
     // ===== 4. 找最大值 =====
     let maxType = "安全型";
     let maxVal = -Infinity;
 
     for (let key in stats) {
-        if (stats[key] > maxVal) {
-            maxVal = stats[key];
+        if (avgStats[key] > maxVal) {
+            maxVal = avgStats[key];
             maxType = key;
         }
     }
